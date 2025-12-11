@@ -134,6 +134,8 @@ def index():
             .stat-value {{ font-size: 22px; font-weight: 700; color: #2962ff; margin-bottom: 5px; }}
             .stat-label {{ font-size: 11px; color: #7f8c8d; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }}
             .footer {{ margin-top: 30px; font-size: 12px; color: #bdc3c7; }}
+            .copy-btn {{ background-color: #2962ff; color: white; border: none; padding: 12px 30px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 25px; transition: opacity 0.2s; }}
+            .copy-btn:hover {{ opacity: 0.9; }}
         </style>
     </head>
     <body>
@@ -145,7 +147,7 @@ def index():
                 <div class="stat-box"><div class="stat-value">{copiers}</div><div class="stat-label">Copiers</div></div>
                 <div class="stat-box"><div class="stat-value">Inception</div><div class="stat-label">Period</div></div>
             </div>
-            <div class="footer">Live Data from Pepperstone API</div>
+            <button class="copy-btn">Copy</button>
             <p style="font-size: 10px; color: #95a5a6;"><a href="/logout">Logout</a></p>
         </div>
     </body>
