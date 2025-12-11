@@ -206,8 +206,8 @@ def debug_api():
     # 2. Try to get profile ID from userinfo and fetch profile details
     if 'userinfo' in results and results['userinfo'].get('status') == 200:
         userinfo = results['userinfo']['data']
-        # Profile ID might be in 'sub', 'profile_id', or another field - we'll see
-        profile_id = userinfo.get('profile_id') or userinfo.get('sub')
+        # Profile ID is in the custom claim 'https://copy-trade.io/profile'
+        profile_id = userinfo.get('https://copy-trade.io/profile')
 
         results['detected_profile_id'] = profile_id
 
