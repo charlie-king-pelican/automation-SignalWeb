@@ -4,7 +4,7 @@ import secrets
 import hashlib
 import base64
 import json
-from datetime import timedelta # ADDED
+from datetime import timedelta
 from flask import Flask, redirect, request, url_for, session 
 
 # ==========================================
@@ -12,20 +12,22 @@ from flask import Flask, redirect, request, url_for, session
 # ==========================================
 API_BASE_URL = 'https://papi.copy-trade.io'
 IDENTITY_URL = 'https://identity.copy-trade.io'
-CLIENT_ID = 'api-client'
+
+# !!! IMPORTANT: REPLACE WITH YOUR OFFICIAL CLIENT ID !!!
+CLIENT_ID = 'YOUR_NEW_OFFICIAL_CLIENT_ID' 
+
 TENANT_ID = 'pepperstone' 
 WHITE_LABEL_ID = 'pepperstone' 
 
 app = Flask(__name__)
-# Crucial: Flask uses secret_key to encrypt the session data stored in the user's cookie.
+# Crucial for security and stability: Retrieves the secure key from Cloud Run environment.
 app.secret_key = os.environ.get('SECRET_KEY', secrets.token_urlsafe(32)) 
 
-# -------------------------------------------------------------------
 # CONFIGURE SESSION TIMEOUT TO 1 HOUR
 app.permanent_session_lifetime = timedelta(hours=1)
-# -------------------------------------------------------------------
 
 # --- DYNAMIC CONFIGURATION ---
+# BASE_URL is set via environment variable in Cloud Run (e.g., https://your-app.run.app)
 BASE_URL = os.environ.get('BASE_URL', 'https://localhost')
 REDIRECT_URI = f"{BASE_URL}" 
 
@@ -38,9 +40,10 @@ def generate_pkce():
 
 @app.route('/')
 def index():
-    # --- 1. AUTHENTICATION ---
+    # --- 1. AUTHENTICATION & TOKEN EXCHANGE ---
     if 'code' in request.args:
         code = request.args.get('code')
+        # Retrieve verifier from session
         verifier = session.pop('verifier', None) 
         
         if verifier:
@@ -57,7 +60,7 @@ def index():
                 if 'access_token' in data:
                     session['access_token'] = data['access_token'] 
                     
-                    # MARK SESSION AS PERMANENT (uses the 1-hour timeout)
+                    # MARK SESSION AS PERMANENT (enables the 1-hour timeout)
                     session.permanent = True 
                     
                     return redirect(url_for('index'))
@@ -66,6 +69,7 @@ def index():
             except Exception as e:
                 return f"Token Error: {e}"
 
+    # Check for token in session. If present, user is logged in for up to 1 hour.
     token = session.get('access_token') 
     
     if not token:
@@ -94,7 +98,7 @@ def index():
     try:
         resp = requests.get(endpoint, headers=headers, params=params)
         
-        # If token is invalid/expired mid-session, force re-login
+        # If token is invalid/expired mid-session, clear session and force re-login
         if resp.status_code == 401:
             session.pop('access_token', None) 
             return redirect(url_for('index')) 
@@ -102,6 +106,7 @@ def index():
         if resp.status_code == 200:
             data = resp.json()
             if data and len(data) > 0:
+                # Displays the #1 Strategy (change index if needed)
                 top_item = data[0] 
                 
                 raw_val = top_item.get('Value', 0)
@@ -173,4 +178,5 @@ def logout():
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
+    # Note: On Google Cloud Run, host="0.0.0.0" and the PORT environment variable are essential.
     app.run(debug=True, host="0.0.0.0", port=port)
