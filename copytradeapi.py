@@ -333,11 +333,11 @@ def accounts():
         </head>
         <body>
             <div class="header">
-                <h1>👤 {profile_name}'s Accounts</h1>
+                <h1>{profile_name}'s Accounts</h1>
                 <a href="/" class="back-link">← Back to Dashboard</a>
             </div>
 
-            {f'<div class="container"><details style="background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px;"><summary style="cursor: pointer; font-weight: 600; color: #2962ff;">🔍 Debug: Raw API Response (Click to expand)</summary><pre style="margin-top: 15px; background: #f4f6f8; padding: 15px; border-radius: 5px; overflow-x: auto; font-size: 12px;">{json.dumps(debug_raw_response, indent=2, default=str)}</pre></details></div>' if debug_raw_response else ''}
+            {f'<div class="container"><details style="background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px;"><summary style="cursor: pointer; font-weight: 600; color: #2962ff;">Debug: Raw API Response (Click to expand)</summary><pre style="margin-top: 15px; background: #f4f6f8; padding: 15px; border-radius: 5px; overflow-x: auto; font-size: 12px;">{json.dumps(debug_raw_response, indent=2, default=str)}</pre></details></div>' if debug_raw_response else ''}
 
             <div class="container">
         '''
@@ -364,10 +364,10 @@ def accounts():
                     <div class="account-info">
                         <div class="account-name">{copier['name']}</div>
                         <div class="account-details">
-                            <span>🖥️ {copier['server']}</span>
-                            <span>👤 {copier['username']}</span>
+                            <span>{copier['server']}</span>
+                            <span>#{copier['username']}</span>
                             <span class="status-badge {status_class}">{status_text}</span>
-                            {f'<span style="color: #7f8c8d; font-size: 12px;">⚙️ 1:{leverage}</span>' if leverage else ''}
+                            {f'<span style="color: #7f8c8d; font-size: 12px;">1:{leverage}</span>' if leverage else ''}
                         </div>
                     </div>
                     <div class="account-stats">
