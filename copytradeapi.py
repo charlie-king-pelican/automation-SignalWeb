@@ -177,7 +177,14 @@ def debug_api():
     """Temporary debug route to inspect API responses"""
     token = session.get('access_token')
     if not token:
-        return "Not logged in", 401
+        return """
+        <html>
+        <body style="font-family: monospace; padding: 20px;">
+            <h2>❌ Not Logged In</h2>
+            <p>Please <a href="/">go to homepage</a> and log in first.</p>
+        </body>
+        </html>
+        """
 
     headers = {
         'Authorization': f"Bearer {token}",
@@ -189,7 +196,10 @@ def debug_api():
     # 1. Get userinfo
     try:
         resp = requests.get(f"{IDENTITY_URL}/connect/userinfo", headers=headers)
-        results['userinfo'] = {'status': resp.status_code, 'data': resp.json() if resp.status_code == 200 else resp.text}
+        if resp.status_code == 200:
+            results['userinfo'] = {'status': resp.status_code, 'data': resp.json()}
+        else:
+            results['userinfo'] = {'status': resp.status_code, 'error': resp.text}
     except Exception as e:
         results['userinfo'] = {'error': str(e)}
 
@@ -199,28 +209,56 @@ def debug_api():
         # Profile ID might be in 'sub', 'profile_id', or another field - we'll see
         profile_id = userinfo.get('profile_id') or userinfo.get('sub')
 
+        results['detected_profile_id'] = profile_id
+
         if profile_id:
             try:
                 resp = requests.get(f"{API_BASE_URL}/api/profiles/{profile_id}", headers=headers)
-                results['profile'] = {'status': resp.status_code, 'data': resp.json() if resp.status_code == 200 else resp.text}
+                if resp.status_code == 200:
+                    results['profile'] = {'status': resp.status_code, 'data': resp.json()}
+                else:
+                    results['profile'] = {'status': resp.status_code, 'error': resp.text}
             except Exception as e:
                 results['profile'] = {'error': str(e)}
 
             # 3. Get strategies
             try:
                 resp = requests.get(f"{API_BASE_URL}/api/profiles/{profile_id}/strategies", headers=headers)
-                results['strategies'] = {'status': resp.status_code, 'data': resp.json() if resp.status_code == 200 else resp.text}
+                if resp.status_code == 200:
+                    results['strategies'] = {'status': resp.status_code, 'count': len(resp.json()), 'data': resp.json()}
+                else:
+                    results['strategies'] = {'status': resp.status_code, 'error': resp.text}
             except Exception as e:
                 results['strategies'] = {'error': str(e)}
 
             # 4. Get copiers
             try:
                 resp = requests.get(f"{API_BASE_URL}/api/profiles/{profile_id}/copiers", headers=headers)
-                results['copiers'] = {'status': resp.status_code, 'data': resp.json() if resp.status_code == 200 else resp.text}
+                if resp.status_code == 200:
+                    results['copiers'] = {'status': resp.status_code, 'count': len(resp.json()), 'data': resp.json()}
+                else:
+                    results['copiers'] = {'status': resp.status_code, 'error': resp.text}
             except Exception as e:
                 results['copiers'] = {'error': str(e)}
+        else:
+            results['error'] = 'Could not find profile_id in userinfo response'
 
-    return f"<pre>{json.dumps(results, indent=2)}</pre>"
+    return f"""
+    <html>
+    <head>
+        <style>
+            body {{ font-family: monospace; padding: 20px; background: #f5f5f5; }}
+            pre {{ background: white; padding: 20px; border-radius: 5px; overflow-x: auto; }}
+            h2 {{ color: #2962ff; }}
+        </style>
+    </head>
+    <body>
+        <h2>🔍 API Debug Output</h2>
+        <a href="/">← Back to Home</a>
+        <pre>{json.dumps(results, indent=2, default=str)}</pre>
+    </body>
+    </html>
+    """
 
 @app.route('/logout')
 def logout():
