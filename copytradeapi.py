@@ -38,6 +38,48 @@ def generate_pkce():
     challenge = base64.urlsafe_b64encode(m.digest()).decode('ascii').replace('=', '')
     return verifier, challenge
 
+def get_profile_info(token):
+    """Fetch profile information including name and account counts"""
+    headers = {
+        'Authorization': f"Bearer {token}",
+        'Content-Type': 'application/json'
+    }
+
+    try:
+        # 1. Get userinfo to extract profile ID
+        resp = requests.get(f"{IDENTITY_URL}/connect/userinfo", headers=headers)
+        if resp.status_code != 200:
+            return None
+
+        userinfo = resp.json()
+        profile_id = userinfo.get('https://copy-trade.io/profile')
+
+        if not profile_id:
+            return None
+
+        # 2. Get profile details
+        resp = requests.get(f"{API_BASE_URL}/api/profiles/{profile_id}", headers=headers)
+        if resp.status_code != 200:
+            return None
+
+        profile_data = resp.json()
+
+        # 3. Get strategies count
+        resp = requests.get(f"{API_BASE_URL}/api/profiles/{profile_id}/strategies", headers=headers)
+        strategies_count = len(resp.json()) if resp.status_code == 200 else 0
+
+        # 4. Get copiers count
+        resp = requests.get(f"{API_BASE_URL}/api/profiles/{profile_id}/copiers", headers=headers)
+        copiers_count = len(resp.json()) if resp.status_code == 200 else 0
+
+        return {
+            'name': profile_data.get('Name', 'User'),
+            'strategies_count': strategies_count,
+            'copiers_count': copiers_count
+        }
+    except Exception:
+        return None
+
 @app.route('/')
 def index():
     # --- 1. AUTHENTICATION & TOKEN EXCHANGE ---
@@ -82,14 +124,17 @@ def index():
         </div>
         '''
 
-    # --- 2. FETCH DATA ---
+    # --- 2. FETCH PROFILE INFO ---
+    profile_info = get_profile_info(token)
+
+    # --- 3. FETCH STRATEGY DATA ---
     headers = {
         'Authorization': f"Bearer {token}",
         'Content-Type': 'application/json'
     }
-    
+
     endpoint = f"{API_BASE_URL}/api/discover/Strategies"
-    params = {"wl": WHITE_LABEL_ID} 
+    params = {"wl": WHITE_LABEL_ID}
 
     name = "Unknown"
     copiers = 0
@@ -124,7 +169,11 @@ def index():
     <html>
     <head>
         <style>
-            body {{ background-color: #f4f6f8; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }}
+            body {{ background-color: #f4f6f8; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; position: relative; }}
+            .profile-info {{ position: absolute; top: 20px; left: 20px; background: white; padding: 15px 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }}
+            .profile-name {{ font-size: 16px; font-weight: 600; color: #333; margin-bottom: 5px; }}
+            .profile-accounts {{ font-size: 12px; color: #7f8c8d; }}
+            .profile-accounts span {{ color: #2962ff; font-weight: 600; }}
             .card {{ background: white; width: 450px; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); text-align: center; }}
             .badge {{ background-color: #f5a623; color: white; padding: 6px 16px; border-radius: 20px; font-weight: bold; font-size: 12px; margin-bottom: 25px; display:inline-block; }}
             .strategy-name {{ font-size: 26px; color: #333; margin-bottom: 35px; font-weight: 600; }}
@@ -139,6 +188,7 @@ def index():
         </style>
     </head>
     <body>
+        {'<div class="profile-info"><div class="profile-name">' + profile_info['name'] + '</div><div class="profile-accounts"><span>' + str(profile_info['strategies_count']) + '</span> Strategies • <span>' + str(profile_info['copiers_count']) + '</span> Copiers</div></div>' if profile_info else ''}
         <div class="card">
             <div class="badge">#1 Spotlight</div>
             <div class="strategy-name">{name}</div>
