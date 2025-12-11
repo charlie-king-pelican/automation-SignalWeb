@@ -170,7 +170,8 @@ def index():
     <head>
         <style>
             body {{ background-color: #f4f6f8; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; position: relative; }}
-            .profile-info {{ position: absolute; top: 20px; left: 20px; background: white; padding: 15px 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }}
+            .profile-info {{ position: absolute; top: 20px; left: 20px; background: white; padding: 15px 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); text-decoration: none; display: block; transition: transform 0.2s, box-shadow 0.2s; }}
+            .profile-info:hover {{ transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,0,0,0.12); cursor: pointer; }}
             .profile-name {{ font-size: 16px; font-weight: 600; color: #333; margin-bottom: 5px; }}
             .profile-accounts {{ font-size: 12px; color: #7f8c8d; }}
             .profile-accounts span {{ color: #2962ff; font-weight: 600; }}
@@ -188,7 +189,7 @@ def index():
         </style>
     </head>
     <body>
-        {'<div class="profile-info"><div class="profile-name">' + profile_info['name'] + '</div><div class="profile-accounts"><span>' + str(profile_info['strategies_count']) + '</span> Strategies • <span>' + str(profile_info['copiers_count']) + '</span> Copiers</div></div>' if profile_info else ''}
+        {'<a href="/accounts" class="profile-info"><div class="profile-name">' + profile_info['name'] + '</div><div class="profile-accounts"><span>' + str(profile_info['strategies_count']) + '</span> Strategies • <span>' + str(profile_info['copiers_count']) + '</span> Copiers</div></a>' if profile_info else ''}
         <div class="card">
             <div class="badge">#1 Spotlight</div>
             <div class="strategy-name">{name}</div>
@@ -204,6 +205,151 @@ def index():
     </html>
     '''
     return html
+
+@app.route('/accounts')
+def accounts():
+    """Display all copier accounts with balance and equity"""
+    token = session.get('access_token')
+    if not token:
+        return redirect(url_for('index'))
+
+    headers = {
+        'Authorization': f"Bearer {token}",
+        'Content-Type': 'application/json'
+    }
+
+    try:
+        # 1. Get profile ID
+        resp = requests.get(f"{IDENTITY_URL}/connect/userinfo", headers=headers)
+        if resp.status_code != 200:
+            return "Error fetching user info", 500
+
+        userinfo = resp.json()
+        profile_id = userinfo.get('https://copy-trade.io/profile')
+
+        if not profile_id:
+            return "Profile ID not found", 500
+
+        # 2. Get profile details
+        resp = requests.get(f"{API_BASE_URL}/api/profiles/{profile_id}", headers=headers)
+        profile_data = resp.json() if resp.status_code == 200 else {}
+        profile_name = profile_data.get('Name', 'User')
+
+        # 3. Get all copiers
+        resp = requests.get(f"{API_BASE_URL}/api/profiles/{profile_id}/copiers", headers=headers)
+        if resp.status_code != 200:
+            return "Error fetching copiers", 500
+
+        copiers = resp.json()
+
+        # 4. Fetch stats for each copier
+        copiers_with_stats = []
+        for copier in copiers:
+            copier_id = copier['Id']
+            stats_resp = requests.get(f"{API_BASE_URL}/api/copiers/{copier_id}/stats", headers=headers)
+
+            stats = {}
+            if stats_resp.status_code == 200:
+                stats_data = stats_resp.json()
+                balance = stats_data.get('status', {}).get('balance', 0)
+                unrealised_pnl = stats_data.get('profitability', {}).get('inception', {}).get('unrealisedPnl', 0)
+                equity = balance + unrealised_pnl
+
+                stats = {
+                    'balance': balance,
+                    'equity': equity,
+                    'unrealised_pnl': unrealised_pnl,
+                    'currency': stats_data.get('currencyCode', 'USD')
+                }
+
+            copiers_with_stats.append({
+                'id': copier['Id'],
+                'name': copier['Name'],
+                'enabled': copier['IsEnabled'],
+                'server': copier.get('Connection', {}).get('ServerCode', 'N/A'),
+                'username': copier.get('Connection', {}).get('Username', 'N/A'),
+                'stats': stats
+            })
+
+        # 5. Render accounts page
+        accounts_html = f'''
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body {{ background-color: #f4f6f8; font-family: sans-serif; padding: 40px; margin: 0; }}
+                .header {{ max-width: 1000px; margin: 0 auto 30px; display: flex; justify-content: space-between; align-items: center; }}
+                .header h1 {{ font-size: 28px; color: #333; margin: 0; }}
+                .back-link {{ color: #2962ff; text-decoration: none; font-weight: 600; font-size: 14px; }}
+                .back-link:hover {{ text-decoration: underline; }}
+                .container {{ max-width: 1000px; margin: 0 auto; }}
+                .account-card {{ background: white; border-radius: 12px; padding: 20px 25px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); display: flex; justify-content: space-between; align-items: center; }}
+                .account-info {{ flex: 1; }}
+                .account-name {{ font-size: 16px; font-weight: 600; color: #333; margin-bottom: 5px; }}
+                .account-details {{ font-size: 13px; color: #7f8c8d; }}
+                .account-details span {{ margin-right: 15px; }}
+                .account-stats {{ text-align: right; }}
+                .stat-row {{ margin-bottom: 5px; }}
+                .stat-label {{ font-size: 11px; color: #7f8c8d; text-transform: uppercase; letter-spacing: 0.5px; margin-right: 8px; }}
+                .stat-value {{ font-size: 16px; font-weight: 700; color: #2962ff; }}
+                .status-badge {{ display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }}
+                .status-enabled {{ background-color: #e8f5e9; color: #2e7d32; }}
+                .status-disabled {{ background-color: #ffebee; color: #c62828; }}
+                .no-data {{ text-align: center; padding: 60px 20px; color: #7f8c8d; }}
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>👤 {profile_name}'s Accounts</h1>
+                <a href="/" class="back-link">← Back to Dashboard</a>
+            </div>
+            <div class="container">
+        '''
+
+        if not copiers_with_stats:
+            accounts_html += '<div class="no-data">No copier accounts found</div>'
+        else:
+            for copier in copiers_with_stats:
+                status_class = 'status-enabled' if copier['enabled'] else 'status-disabled'
+                status_text = 'Active' if copier['enabled'] else 'Inactive'
+
+                balance = copier['stats'].get('balance', 0)
+                equity = copier['stats'].get('equity', 0)
+                currency = copier['stats'].get('currency', 'USD')
+
+                accounts_html += f'''
+                <div class="account-card">
+                    <div class="account-info">
+                        <div class="account-name">{copier['name']}</div>
+                        <div class="account-details">
+                            <span>🖥️ {copier['server']}</span>
+                            <span>👤 {copier['username']}</span>
+                            <span class="status-badge {status_class}">{status_text}</span>
+                        </div>
+                    </div>
+                    <div class="account-stats">
+                        <div class="stat-row">
+                            <span class="stat-label">Balance</span>
+                            <span class="stat-value">{currency} {balance:,.2f}</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Equity</span>
+                            <span class="stat-value">{currency} {equity:,.2f}</span>
+                        </div>
+                    </div>
+                </div>
+                '''
+
+        accounts_html += '''
+            </div>
+        </body>
+        </html>
+        '''
+
+        return accounts_html
+
+    except Exception as e:
+        return f"Error: {e}", 500
 
 @app.route('/login')
 def login():
