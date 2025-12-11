@@ -262,15 +262,29 @@ def accounts():
                         'raw_data': stats_data
                     }
 
-                balance = stats_data.get('status', {}).get('balance', 0)
-                unrealised_pnl = stats_data.get('profitability', {}).get('inception', {}).get('unrealisedPnl', 0)
+                # Extract with correct PascalCase field names
+                status_obj = stats_data.get('Status', {})
+                profitability_obj = stats_data.get('Profitability', {}).get('Inception', {})
+                history = profitability_obj.get('History', [])
+
+                balance = status_obj.get('Balance', 0)
+                leverage = status_obj.get('Leverage')
+                unrealised_pnl = profitability_obj.get('UnrealisedPnl', 0)
+                realised_return = profitability_obj.get('RealisedReturn', 0)
+                max_drawdown = profitability_obj.get('MaxDrawdown', 0)
+
+                # Get most recent return from history (last item)
+                latest_return = history[-1]['AccountReturn'] if history else realised_return
+
                 equity = balance + unrealised_pnl
 
                 stats = {
                     'balance': balance,
                     'equity': equity,
-                    'unrealised_pnl': unrealised_pnl,
-                    'currency': stats_data.get('currencyCode', 'USD')
+                    'leverage': leverage,
+                    'return_pct': latest_return * 100,  # Convert to percentage
+                    'drawdown_pct': max_drawdown * 100,  # Convert to percentage
+                    'currency': stats_data.get('CurrencyCode', 'USD')
                 }
             else:
                 # Capture failed response for debugging
@@ -337,7 +351,13 @@ def accounts():
 
                 balance = copier['stats'].get('balance', 0)
                 equity = copier['stats'].get('equity', 0)
+                leverage = copier['stats'].get('leverage')
+                return_pct = copier['stats'].get('return_pct', 0)
+                drawdown_pct = copier['stats'].get('drawdown_pct', 0)
                 currency = copier['stats'].get('currency', 'USD')
+
+                # Determine color for return (green if positive, red if negative)
+                return_color = '#2e7d32' if return_pct >= 0 else '#c62828'
 
                 accounts_html += f'''
                 <div class="account-card">
@@ -347,6 +367,7 @@ def accounts():
                             <span>🖥️ {copier['server']}</span>
                             <span>👤 {copier['username']}</span>
                             <span class="status-badge {status_class}">{status_text}</span>
+                            {f'<span style="color: #7f8c8d; font-size: 12px;">⚙️ 1:{leverage}</span>' if leverage else ''}
                         </div>
                     </div>
                     <div class="account-stats">
@@ -357,6 +378,14 @@ def accounts():
                         <div class="stat-row">
                             <span class="stat-label">Equity</span>
                             <span class="stat-value">{currency} {equity:,.2f}</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Return</span>
+                            <span class="stat-value" style="color: {return_color};">{return_pct:+.2f}%</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Drawdown</span>
+                            <span class="stat-value">{drawdown_pct:.2f}%</span>
                         </div>
                     </div>
                 </div>
