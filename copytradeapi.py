@@ -244,7 +244,6 @@ def accounts():
 
         # 4. Fetch stats for each copier
         copiers_with_stats = []
-        debug_raw_response = None  # Store first response for debugging
 
         for copier in copiers:
             copier_id = copier['Id']
@@ -253,14 +252,6 @@ def accounts():
             stats = {}
             if stats_resp.status_code == 200:
                 stats_data = stats_resp.json()
-
-                # Capture first response for debugging
-                if debug_raw_response is None:
-                    debug_raw_response = {
-                        'copier_id': copier_id,
-                        'status_code': stats_resp.status_code,
-                        'raw_data': stats_data
-                    }
 
                 # Extract with correct PascalCase field names
                 status_obj = stats_data.get('Status', {})
@@ -286,14 +277,6 @@ def accounts():
                     'drawdown_pct': max_drawdown * 100,  # Convert to percentage
                     'currency': stats_data.get('CurrencyCode', 'USD')
                 }
-            else:
-                # Capture failed response for debugging
-                if debug_raw_response is None:
-                    debug_raw_response = {
-                        'copier_id': copier_id,
-                        'status_code': stats_resp.status_code,
-                        'error': stats_resp.text
-                    }
 
             copiers_with_stats.append({
                 'id': copier['Id'],
@@ -336,9 +319,6 @@ def accounts():
                 <h1>{profile_name}'s Accounts</h1>
                 <a href="/" class="back-link">← Back to Dashboard</a>
             </div>
-
-            {f'<div class="container"><details style="background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px;"><summary style="cursor: pointer; font-weight: 600; color: #2962ff;">Debug: Raw API Response (Click to expand)</summary><pre style="margin-top: 15px; background: #f4f6f8; padding: 15px; border-radius: 5px; overflow-x: auto; font-size: 12px;">{json.dumps(debug_raw_response, indent=2, default=str)}</pre></details></div>' if debug_raw_response else ''}
-
             <div class="container">
         '''
 
