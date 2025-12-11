@@ -172,6 +172,56 @@ def login():
     )
     return redirect(auth_url)
 
+@app.route('/debug/api')
+def debug_api():
+    """Temporary debug route to inspect API responses"""
+    token = session.get('access_token')
+    if not token:
+        return "Not logged in", 401
+
+    headers = {
+        'Authorization': f"Bearer {token}",
+        'Content-Type': 'application/json'
+    }
+
+    results = {}
+
+    # 1. Get userinfo
+    try:
+        resp = requests.get(f"{IDENTITY_URL}/connect/userinfo", headers=headers)
+        results['userinfo'] = {'status': resp.status_code, 'data': resp.json() if resp.status_code == 200 else resp.text}
+    except Exception as e:
+        results['userinfo'] = {'error': str(e)}
+
+    # 2. Try to get profile ID from userinfo and fetch profile details
+    if 'userinfo' in results and results['userinfo'].get('status') == 200:
+        userinfo = results['userinfo']['data']
+        # Profile ID might be in 'sub', 'profile_id', or another field - we'll see
+        profile_id = userinfo.get('profile_id') or userinfo.get('sub')
+
+        if profile_id:
+            try:
+                resp = requests.get(f"{API_BASE_URL}/api/profiles/{profile_id}", headers=headers)
+                results['profile'] = {'status': resp.status_code, 'data': resp.json() if resp.status_code == 200 else resp.text}
+            except Exception as e:
+                results['profile'] = {'error': str(e)}
+
+            # 3. Get strategies
+            try:
+                resp = requests.get(f"{API_BASE_URL}/api/profiles/{profile_id}/strategies", headers=headers)
+                results['strategies'] = {'status': resp.status_code, 'data': resp.json() if resp.status_code == 200 else resp.text}
+            except Exception as e:
+                results['strategies'] = {'error': str(e)}
+
+            # 4. Get copiers
+            try:
+                resp = requests.get(f"{API_BASE_URL}/api/profiles/{profile_id}/copiers", headers=headers)
+                results['copiers'] = {'status': resp.status_code, 'data': resp.json() if resp.status_code == 200 else resp.text}
+            except Exception as e:
+                results['copiers'] = {'error': str(e)}
+
+    return f"<pre>{json.dumps(results, indent=2)}</pre>"
+
 @app.route('/logout')
 def logout():
     # Log out by clearing the token from the session
