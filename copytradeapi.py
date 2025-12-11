@@ -364,8 +364,8 @@ def accounts():
                             <span class="stat-value" style="color: {return_color};">{return_pct:+.2f}%</span>
                         </div>
                         <div class="stat-row">
-                            <span class="stat-label">Drawdown</span>
-                            <span class="stat-value">{drawdown_pct:.2f}%</span>
+                            <span class="stat-label">Max Drawdown (Equity)</span>
+                            <span class="stat-value" style="color: #c62828;">{drawdown_pct:.2f}%</span>
                         </div>
                     </div>
                 </div>
