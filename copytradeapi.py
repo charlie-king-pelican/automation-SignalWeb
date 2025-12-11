@@ -244,6 +244,8 @@ def accounts():
 
         # 4. Fetch stats for each copier
         copiers_with_stats = []
+        debug_raw_response = None  # Store first response for debugging
+
         for copier in copiers:
             copier_id = copier['Id']
             stats_resp = requests.get(f"{API_BASE_URL}/api/copiers/{copier_id}/stats", headers=headers)
@@ -251,6 +253,15 @@ def accounts():
             stats = {}
             if stats_resp.status_code == 200:
                 stats_data = stats_resp.json()
+
+                # Capture first response for debugging
+                if debug_raw_response is None:
+                    debug_raw_response = {
+                        'copier_id': copier_id,
+                        'status_code': stats_resp.status_code,
+                        'raw_data': stats_data
+                    }
+
                 balance = stats_data.get('status', {}).get('balance', 0)
                 unrealised_pnl = stats_data.get('profitability', {}).get('inception', {}).get('unrealisedPnl', 0)
                 equity = balance + unrealised_pnl
@@ -261,6 +272,14 @@ def accounts():
                     'unrealised_pnl': unrealised_pnl,
                     'currency': stats_data.get('currencyCode', 'USD')
                 }
+            else:
+                # Capture failed response for debugging
+                if debug_raw_response is None:
+                    debug_raw_response = {
+                        'copier_id': copier_id,
+                        'status_code': stats_resp.status_code,
+                        'error': stats_resp.text
+                    }
 
             copiers_with_stats.append({
                 'id': copier['Id'],
@@ -303,6 +322,9 @@ def accounts():
                 <h1>👤 {profile_name}'s Accounts</h1>
                 <a href="/" class="back-link">← Back to Dashboard</a>
             </div>
+
+            {f'<div class="container"><details style="background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px;"><summary style="cursor: pointer; font-weight: 600; color: #2962ff;">🔍 Debug: Raw API Response (Click to expand)</summary><pre style="margin-top: 15px; background: #f4f6f8; padding: 15px; border-radius: 5px; overflow-x: auto; font-size: 12px;">{json.dumps(debug_raw_response, indent=2, default=str)}</pre></details></div>' if debug_raw_response else ''}
+
             <div class="container">
         '''
 
