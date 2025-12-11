@@ -14,7 +14,7 @@ API_BASE_URL = 'https://papi.copy-trade.io'
 IDENTITY_URL = 'https://identity.copy-trade.io'
 
 # !!! IMPORTANT: REPLACE WITH YOUR OFFICIAL CLIENT ID !!!
-CLIENT_ID = 'YOUR_NEW_OFFICIAL_CLIENT_ID' 
+CLIENT_ID = 'api-client' 
 
 TENANT_ID = 'pepperstone' 
 WHITE_LABEL_ID = 'pepperstone' 
