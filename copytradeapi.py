@@ -4,7 +4,8 @@ import secrets
 import hashlib
 import base64
 import json
-from flask import Flask, redirect, request, url_for, session # <--- ADDED session
+from datetime import timedelta # ADDED
+from flask import Flask, redirect, request, url_for, session 
 
 # ==========================================
 # CONFIGURATION
@@ -17,14 +18,16 @@ WHITE_LABEL_ID = 'pepperstone'
 
 app = Flask(__name__)
 # Crucial: Flask uses secret_key to encrypt the session data stored in the user's cookie.
-# Must be set via environment variable in Cloud Run for security.
 app.secret_key = os.environ.get('SECRET_KEY', secrets.token_urlsafe(32)) 
+
+# -------------------------------------------------------------------
+# CONFIGURE SESSION TIMEOUT TO 1 HOUR
+app.permanent_session_lifetime = timedelta(hours=1)
+# -------------------------------------------------------------------
 
 # --- DYNAMIC CONFIGURATION ---
 BASE_URL = os.environ.get('BASE_URL', 'https://localhost')
 REDIRECT_URI = f"{BASE_URL}" 
-
-# Removed AUTH_STORE = {}
 
 def generate_pkce():
     verifier = secrets.token_urlsafe(32)
@@ -38,7 +41,6 @@ def index():
     # --- 1. AUTHENTICATION ---
     if 'code' in request.args:
         code = request.args.get('code')
-        # Retrieve verifier from session, not AUTH_STORE
         verifier = session.pop('verifier', None) 
         
         if verifier:
@@ -53,15 +55,17 @@ def index():
                 r = requests.post(f"{IDENTITY_URL}/connect/token", data=payload)
                 data = r.json()
                 if 'access_token' in data:
-                    # Store token in session, not AUTH_STORE
                     session['access_token'] = data['access_token'] 
+                    
+                    # MARK SESSION AS PERMANENT (uses the 1-hour timeout)
+                    session.permanent = True 
+                    
                     return redirect(url_for('index'))
                 else:
                     return f"Token Exchange Error: {data.get('error_description', data.get('error', 'Unknown Error'))}"
             except Exception as e:
                 return f"Token Error: {e}"
 
-    # Check for token in session, not AUTH_STORE
     token = session.get('access_token') 
     
     if not token:
@@ -71,9 +75,6 @@ def index():
             <a href="/login" style="padding:15px 30px; background:#007bff; color:white; text-decoration:none; border-radius:5px; font-weight:bold;">
                 Login with Pepperstone
             </a>
-            <div style="margin-top: 20px; font-size: 12px; color: #7f8c8d;">
-                (Waiting for Client ID from developer)
-            </div>
         </div>
         '''
 
@@ -93,10 +94,10 @@ def index():
     try:
         resp = requests.get(endpoint, headers=headers, params=params)
         
-        # Check for expired/invalid token (401 Unauthorized)
+        # If token is invalid/expired mid-session, force re-login
         if resp.status_code == 401:
-            session.pop('access_token', None) # Clear the bad token
-            return redirect(url_for('index')) # Force re-login
+            session.pop('access_token', None) 
+            return redirect(url_for('index')) 
             
         if resp.status_code == 200:
             data = resp.json()
@@ -119,7 +120,15 @@ def index():
     <head>
         <style>
             body {{ background-color: #f4f6f8; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }}
-            /* ... (UI Styles remain the same) ... */
+            .card {{ background: white; width: 450px; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); text-align: center; }}
+            .badge {{ background-color: #f5a623; color: white; padding: 6px 16px; border-radius: 20px; font-weight: bold; font-size: 12px; margin-bottom: 25px; display:inline-block; }}
+            .strategy-name {{ font-size: 26px; color: #333; margin-bottom: 35px; font-weight: 600; }}
+            .stats-container {{ display: flex; justify-content: space-between; background-color: #f8f9fa; border-radius: 12px; padding: 25px 15px; }}
+            .stat-box {{ text-align: center; flex: 1; border-right: 1px solid #e0e0e0; }}
+            .stat-box:last-child {{ border-right: none; }}
+            .stat-value {{ font-size: 22px; font-weight: 700; color: #2962ff; margin-bottom: 5px; }}
+            .stat-label {{ font-size: 11px; color: #7f8c8d; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }}
+            .footer {{ margin-top: 30px; font-size: 12px; color: #bdc3c7; }}
         </style>
     </head>
     <body>
@@ -142,10 +151,8 @@ def index():
 @app.route('/login')
 def login():
     verifier, challenge = generate_pkce()
-    # Store verifier in session, not AUTH_STORE
     session['verifier'] = verifier 
     
-    # Notice we use the global REDIRECT_URI here
     auth_url = (
         f"{IDENTITY_URL}/connect/authorize"
         f"?client_id={CLIENT_ID}"
@@ -160,6 +167,7 @@ def login():
 
 @app.route('/logout')
 def logout():
+    # Log out by clearing the token from the session
     session.pop('access_token', None)
     return redirect(url_for('index'))
 
