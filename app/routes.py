@@ -336,7 +336,8 @@ def register_routes(app):
 
         response = make_response(render_template(
             'copying.html',
-            copiers_data=copiers_data
+            copiers_data=copiers_data,
+            format_trade_sizing=services.format_trade_sizing
         ))
         return add_no_cache_headers(response)
 

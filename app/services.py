@@ -429,6 +429,49 @@ def format_currency(value, code="USD"):
     return f"{symbol}{value:,.2f}"
 
 
+def format_trade_sizing(size_type, size_value):
+    """
+    Format trade sizing for display, matching the modal dropdown labels exactly.
+
+    Labels must match the copy/edit modal options:
+    - Fixed → "Fixed (X.XX)"
+    - MirrorSize → "Mirror Size (X.XXx)"
+    - MirrorRiskByEquity → "Mirror Risk by Equity (X.XXx)"
+    - MirrorRiskByBalance → "Mirror Risk by Balance (X.XXx)"
+
+    Args:
+        size_type: Trade size type string (e.g., 'Fixed', 'MirrorSize')
+        size_value: Trade size value (numeric)
+
+    Returns:
+        str: Formatted trade sizing string
+    """
+    if size_type is None:
+        return "-"
+
+    # Ensure size_value is a float
+    try:
+        value = float(size_value) if size_value is not None else 1.0
+    except (TypeError, ValueError):
+        value = 1.0
+
+    # Map API values to display labels (must match modal dropdown options)
+    type_labels = {
+        'Fixed': 'Fixed',
+        'MirrorSize': 'Mirror Size',
+        'MirrorRiskByEquity': 'Mirror Risk by Equity',
+        'MirrorRiskByBalance': 'Mirror Risk by Balance'
+    }
+
+    label = type_labels.get(size_type, size_type)
+
+    # Fixed shows just the value, others show value with 'x' suffix (multiplier)
+    if size_type == 'Fixed':
+        return f"{label} ({value:.2f})"
+    else:
+        return f"{label} ({value:.2f}x)"
+
+
 def compute_closed_trades_stats(closed_signals):
     """
     Compute summary statistics for closed trades.

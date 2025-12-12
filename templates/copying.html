@@ -35,12 +35,6 @@
                             <span class="copier-detail">{{ copier_data.copier.server_code }}</span>
                             <span class="copier-separator">•</span>
                             <span class="copier-detail">{{ copier_data.copier.username }}</span>
-                            <span class="copier-separator">•</span>
-                            {% if copier_data.copier.enabled %}
-                            <span class="status-badge status-enabled">Enabled</span>
-                            {% else %}
-                            <span class="status-badge status-disabled">Disabled</span>
-                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -56,7 +50,6 @@
                         <thead>
                             <tr>
                                 <th>Strategy</th>
-                                <th>Provider</th>
                                 <th>Fee</th>
                                 <th>Trade Sizing</th>
                                 <th>Copy Existing</th>
@@ -71,7 +64,6 @@
                                     <div class="strategy-name">{{ strategy_data.strategy.name }}</div>
                                     <div class="strategy-meta">{{ strategy_data.strategy.num_copiers }} copiers</div>
                                 </td>
-                                <td>{{ strategy_data.strategy.profile_name }}</td>
                                 <td>
                                     {% if strategy_data.strategy.fee == 0 %}
                                     Free
@@ -81,18 +73,7 @@
                                 </td>
                                 <td>
                                     {% if strategy_data.settings %}
-                                        {% set size_type = strategy_data.settings.get('TradeSizeType', 'Fixed') %}
-                                        {% if size_type == 'Fixed' %}
-                                        Fixed ({{ '%.2f'|format(strategy_data.settings.get('TradeSizeValue', 0)) }})
-                                        {% elif size_type == 'MirrorSize' %}
-                                        Mirror ({{ '%.2f'|format(strategy_data.settings.get('TradeSizeValue', 1)) }}x)
-                                        {% elif size_type == 'MirrorRiskByEquity' %}
-                                        Risk by Equity ({{ '%.2f'|format(strategy_data.settings.get('TradeSizeValue', 1)) }}x)
-                                        {% elif size_type == 'MirrorRiskByBalance' %}
-                                        Risk by Balance ({{ '%.2f'|format(strategy_data.settings.get('TradeSizeValue', 1)) }}x)
-                                        {% else %}
-                                        {{ size_type }}
-                                        {% endif %}
+                                    {{ format_trade_sizing(strategy_data.settings.get('TradeSizeType'), strategy_data.settings.get('TradeSizeValue')) }}
                                     {% else %}
                                     -
                                     {% endif %}
