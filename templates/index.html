@@ -15,16 +15,6 @@
         <a href="/logout" class="nav-link nav-link-logout">Logout</a>
     </div>
 
-    {% if profile_info %}
-    <a href="/accounts" class="profile-info">
-        <div class="profile-name">{{ profile_info.name }}</div>
-        <div class="profile-accounts">
-            <span>{{ profile_info.strategies_count }}</span> Strategies •
-            <span>{{ profile_info.copiers_count }}</span> Copiers
-        </div>
-    </a>
-    {% endif %}
-
     <div class="card">
         <!-- Hero Section: The Anchor -->
         <div class="hero-section">

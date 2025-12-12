@@ -42,20 +42,6 @@
                             {% endif %}
                         </div>
                     </div>
-                    {% if copier_data.copier_stats %}
-                    <div class="copier-stats-section">
-                        <div class="copier-stat-item">
-                            <span class="copier-stat-label">Balance</span>
-                            <span class="copier-stat-value">{{ '${:,.2f}'.format(copier_data.copier_stats.balance) }}</span>
-                        </div>
-                        <div class="copier-stat-item">
-                            <span class="copier-stat-label">Return</span>
-                            <span class="copier-stat-value {{ 'positive-pnl' if copier_data.copier_stats.return_pct >= 0 else 'negative-pnl' }}">
-                                {{ '{:+.1f}%'.format(copier_data.copier_stats.return_pct) }}
-                            </span>
-                        </div>
-                    </div>
-                    {% endif %}
                 </div>
 
                 <!-- Strategies Table -->
@@ -82,9 +68,7 @@
                             <tr>
                                 <td class="strategy-name-cell">
                                     <div class="strategy-name">{{ strategy_data.strategy.name }}</div>
-                                    {% if strategy_data.stats and strategy_data.stats.get('CurrencyCode') %}
-                                    <div class="strategy-meta">{{ strategy_data.stats.CurrencyCode }} • {{ strategy_data.strategy.num_copiers }} copiers</div>
-                                    {% endif %}
+                                    <div class="strategy-meta">{{ strategy_data.strategy.num_copiers }} copiers</div>
                                 </td>
                                 <td>{{ strategy_data.strategy.profile_name }}</td>
                                 <td>

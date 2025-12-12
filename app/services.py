@@ -19,6 +19,9 @@ CLIENT_ID = 'api-client'
 TENANT_ID = 'pepperstone'
 WHITE_LABEL_ID = 'pepperstone'
 
+# Request timeout in seconds - fail fast rather than hang
+REQUEST_TIMEOUT = 5
+
 
 def generate_pkce():
     """
@@ -674,7 +677,8 @@ def get_copy_settings(copier_id, strategy_id, token):
     try:
         resp = requests.get(
             f"{API_BASE_URL}/api/copiers/{copier_id}/strategies/{strategy_id}/copy-settings",
-            headers=headers
+            headers=headers,
+            timeout=REQUEST_TIMEOUT
         )
         if resp.status_code == 200:
             return resp.json(), 200
@@ -763,7 +767,7 @@ def get_profile_id(token):
     }
 
     try:
-        resp = requests.get(f"{IDENTITY_URL}/connect/userinfo", headers=headers)
+        resp = requests.get(f"{IDENTITY_URL}/connect/userinfo", headers=headers, timeout=REQUEST_TIMEOUT)
         if resp.status_code == 200:
             userinfo = resp.json()
             return userinfo.get('https://copy-trade.io/profile')
@@ -791,7 +795,8 @@ def list_profile_copiers(profile_id, token):
     try:
         resp = requests.get(
             f"{API_BASE_URL}/api/profiles/{profile_id}/copiers",
-            headers=headers
+            headers=headers,
+            timeout=REQUEST_TIMEOUT
         )
         if resp.status_code == 200:
             return resp.json()
@@ -819,7 +824,8 @@ def list_copier_strategies(copier_id, token):
     try:
         resp = requests.get(
             f"{API_BASE_URL}/api/copiers/{copier_id}/strategies",
-            headers=headers
+            headers=headers,
+            timeout=REQUEST_TIMEOUT
         )
         if resp.status_code == 200:
             return resp.json()

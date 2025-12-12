@@ -267,30 +267,32 @@ def register_routes(app):
 
     @app.route('/copying')
     def copying():
-        """Display all copier accounts and the strategies they are copying."""
+        """Display all copier accounts and the strategies they are copying.
+
+        Performance optimized: Only fetches essential data for initial view.
+        Removed: copier stats, strategy stats (reduces API calls from ~30+ to ~11 for typical usage).
+        """
         token = session.get('access_token')
         if not token:
             return redirect(url_for('index'))
 
-        # Get profile ID
+        # Get profile ID (1 API call)
         profile_id = services.get_profile_id(token)
         if not profile_id:
             return "Error: Could not retrieve profile", 500
 
-        # Get all copiers for this profile
+        # Get all copiers for this profile (1 API call)
         copiers = services.list_profile_copiers(profile_id, token)
 
         # Build view model with nested data
-        # Use simple dict cache for strategy stats to avoid N+1
-        strategy_stats_cache = {}
-
+        # Optimized: No longer fetching copier stats or strategy stats on initial load
         copiers_data = []
         for copier in copiers:
             copier_id = copier.get('Id')
             if not copier_id:
                 continue
 
-            # Build copier info
+            # Build copier info (no API call - using data from list_profile_copiers)
             copier_info = {
                 'id': copier_id,
                 'name': copier.get('Name', 'Unknown'),
@@ -299,20 +301,7 @@ def register_routes(app):
                 'username': copier.get('Connection', {}).get('Username', 'N/A')
             }
 
-            # Get copier stats (optional, continue if fails)
-            copier_stats = None
-            try:
-                stats_resp = services.get_copiers_with_stats(token)
-                if stats_resp and len(stats_resp) == 2:
-                    _, copiers_with_stats = stats_resp
-                    for c in copiers_with_stats:
-                        if c.get('id') == copier_id:
-                            copier_stats = c.get('stats', {})
-                            break
-            except Exception:
-                pass
-
-            # Get strategies being copied by this copier
+            # Get strategies being copied by this copier (1 API call per copier)
             strategies_list = services.list_copier_strategies(copier_id, token)
 
             strategies_data = []
@@ -321,20 +310,12 @@ def register_routes(app):
                 if not strategy_id:
                     continue
 
-                # Get copy settings for this copier/strategy pair
+                # Get copy settings for this copier/strategy pair (1 API call per strategy)
                 copy_settings, status_code = services.get_copy_settings(copier_id, strategy_id, token)
                 if status_code != 200:
                     copy_settings = None
 
-                # Get strategy stats (with caching)
-                stats = None
-                if strategy_id not in strategy_stats_cache:
-                    stats = services.get_strategy_stats(strategy_id, token)
-                    strategy_stats_cache[strategy_id] = stats
-                else:
-                    stats = strategy_stats_cache[strategy_id]
-
-                # Build strategy data
+                # Build strategy data (no extra API call - using data from list_copier_strategies)
                 strategy_data = {
                     'id': strategy_id,
                     'name': strategy.get('Name', 'Unknown'),
@@ -345,13 +326,11 @@ def register_routes(app):
 
                 strategies_data.append({
                     'strategy': strategy_data,
-                    'settings': copy_settings,
-                    'stats': stats
+                    'settings': copy_settings
                 })
 
             copiers_data.append({
                 'copier': copier_info,
-                'copier_stats': copier_stats,
                 'strategies': strategies_data
             })
 

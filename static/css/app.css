@@ -60,45 +60,6 @@ body {
     opacity: 0.9;
 }
 
-/* Profile Info (Top Left) */
-.profile-info {
-    position: absolute;
-    top: 20px;
-    left: 20px;
-    background: rgba(255,255,255,0.95);
-    backdrop-filter: blur(10px);
-    padding: 12px 18px;
-    border-radius: 10px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-    text-decoration: none;
-    display: block;
-    transition: all 0.2s;
-    border: 1px solid rgba(41,98,255,0.1);
-}
-
-.profile-info:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    cursor: pointer;
-}
-
-.profile-name {
-    font-size: 14px;
-    font-weight: 600;
-    color: #333;
-    margin-bottom: 4px;
-}
-
-.profile-accounts {
-    font-size: 11px;
-    color: #7f8c8d;
-}
-
-.profile-accounts span {
-    color: #2962ff;
-    font-weight: 600;
-}
-
 /* Main Card */
 .card {
     background: white;
@@ -234,7 +195,8 @@ body {
     border-right: none;
 }
 
-.stat-value {
+/* Hero stats - scoped to stats-container for specificity */
+.stats-container .stat-value {
     font-size: 28px;
     font-weight: 800;
     color: #2962ff;
@@ -444,6 +406,7 @@ body {
     font-size: 20px;
     font-weight: 700;
     margin-bottom: 5px;
+    color: white;
 }
 
 .copier-stat-label {
@@ -451,6 +414,7 @@ body {
     opacity: 0.9;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    color: white;
 }
 
 /* Trades Tabs + Table */
@@ -650,18 +614,21 @@ body {
     font-style: italic;
 }
 
-/* Copy Strategy Button */
-.copy-btn {
-    background-color: #2962ff;
-    color: white;
+/* Copy Strategy Buttons - shared base styles for Edit Copy and Stop Copying */
+.copy-btn,
+.stop-copy-btn {
     border: none;
-    padding: 14px 40px;
+    padding: 14px 32px;
     border-radius: 10px;
     font-size: 15px;
     font-weight: 600;
     cursor: pointer;
-    margin-top: 10px;
     transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.copy-btn {
+    background-color: #2962ff;
+    color: white;
     box-shadow: 0 4px 15px rgba(41, 98, 255, 0.3);
 }
 
@@ -888,13 +855,6 @@ body {
 .stop-copy-btn {
     background-color: #d32f2f;
     color: white;
-    border: none;
-    padding: 14px 32px;
-    border-radius: 10px;
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
     box-shadow: 0 4px 15px rgba(211, 47, 47, 0.3);
 }
 
@@ -1269,7 +1229,7 @@ body.copying-page {
 /* Accounts Page Styles */
 body.accounts-page {
     background-color: #f4f6f8;
-    padding: 40px;
+    padding: 80px 40px 40px 40px; /* top padding accounts for fixed nav (60px) + spacing */
     display: block;
     min-height: auto;
 }
