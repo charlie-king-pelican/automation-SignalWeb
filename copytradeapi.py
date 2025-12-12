@@ -350,24 +350,32 @@ def index():
     <html>
     <head>
         <style>
-            body {{ background-color: #f4f6f8; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; position: relative; padding: 20px; }}
-            .profile-info {{ position: absolute; top: 20px; left: 20px; background: white; padding: 15px 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); text-decoration: none; display: block; transition: transform 0.2s, box-shadow 0.2s; }}
-            .profile-info:hover {{ transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,0,0,0.12); cursor: pointer; }}
-            .profile-name {{ font-size: 16px; font-weight: 600; color: #333; margin-bottom: 5px; }}
-            .profile-accounts {{ font-size: 12px; color: #7f8c8d; }}
+            body {{ background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; position: relative; padding: 20px; }}
+            .profile-info {{ position: absolute; top: 20px; left: 20px; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); padding: 12px 18px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); text-decoration: none; display: block; transition: all 0.2s; border: 1px solid rgba(41,98,255,0.1); }}
+            .profile-info:hover {{ transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); cursor: pointer; }}
+            .profile-name {{ font-size: 14px; font-weight: 600; color: #333; margin-bottom: 4px; }}
+            .profile-accounts {{ font-size: 11px; color: #7f8c8d; }}
             .profile-accounts span {{ color: #2962ff; font-weight: 600; }}
-            .card {{ background: white; width: 650px; max-width: 95vw; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); text-align: center; }}
-            .badge {{ background-color: #f5a623; color: white; padding: 6px 16px; border-radius: 20px; font-weight: bold; font-size: 12px; margin-bottom: 15px; display:inline-block; }}
-            .strategy-name {{ font-size: 28px; color: #333; margin-bottom: 8px; font-weight: 700; }}
-            .inception-date {{ font-size: 13px; color: #7f8c8d; margin-bottom: 30px; }}
-            .inception-date span {{ color: #2962ff; font-weight: 600; }}
+            .card {{ background: white; width: 650px; max-width: 95vw; padding: 0; border-radius: 24px; box-shadow: 0 20px 60px rgba(0,0,0,0.12); overflow: hidden; }}
 
-            /* Main stats */
-            .stats-container {{ display: flex; justify-content: space-between; background-color: #f8f9fa; border-radius: 12px; padding: 25px 15px; margin-bottom: 15px; }}
-            .stat-box {{ text-align: center; flex: 1; border-right: 1px solid #e0e0e0; }}
+            /* Hero Section - Elevated Anchor */
+            .hero-section {{ background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%); padding: 50px 40px 40px; border-bottom: 1px solid #e8ecf1; position: relative; }}
+            .hero-section::after {{ content: ''; position: absolute; bottom: -1px; left: 50%; transform: translateX(-50%); width: 80%; height: 1px; background: linear-gradient(90deg, transparent 0%, #2962ff 50%, transparent 100%); opacity: 0.3; }}
+
+            .badge {{ background: linear-gradient(135deg, #f5a623 0%, #f76b1c 100%); color: white; padding: 8px 20px; border-radius: 24px; font-weight: 700; font-size: 11px; margin-bottom: 20px; display: inline-block; letter-spacing: 0.5px; text-transform: uppercase; box-shadow: 0 4px 12px rgba(245,166,35,0.3); }}
+            .strategy-name {{ font-size: 36px; color: #1a1a1a; margin-bottom: 12px; font-weight: 800; letter-spacing: -0.5px; line-height: 1.2; }}
+            .inception-date {{ font-size: 14px; color: #6c757d; margin-bottom: 35px; font-weight: 500; }}
+            .inception-date span {{ color: #2962ff; font-weight: 700; }}
+
+            /* Main stats - Part of hero */
+            .stats-container {{ display: flex; justify-content: space-between; background: white; border-radius: 16px; padding: 28px 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.04); }}
+            .stat-box {{ text-align: center; flex: 1; border-right: 1px solid #e8ecf1; padding: 0 15px; }}
             .stat-box:last-child {{ border-right: none; }}
-            .stat-value {{ font-size: 24px; font-weight: 700; color: #2962ff; margin-bottom: 5px; }}
-            .stat-label {{ font-size: 11px; color: #7f8c8d; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }}
+            .stat-value {{ font-size: 28px; font-weight: 800; color: #2962ff; margin-bottom: 8px; letter-spacing: -0.5px; }}
+            .stat-label {{ font-size: 10px; color: #8492a6; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }}
+
+            /* Content sections container */
+            .content-sections {{ padding: 30px 40px 40px; }}
 
             /* Trade Performance Section */
             .trades-section {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; padding: 25px; color: white; margin-bottom: 15px; }}
@@ -408,16 +416,22 @@ def index():
     <body>
         {'<a href="/accounts" class="profile-info"><div class="profile-name">' + profile_info['name'] + '</div><div class="profile-accounts"><span>' + str(profile_info['strategies_count']) + '</span> Strategies • <span>' + str(profile_info['copiers_count']) + '</span> Copiers</div></a>' if profile_info else ''}
         <div class="card">
-            <div class="badge">#1 Spotlight</div>
-            <div class="strategy-name">{name}</div>
-            <div class="inception-date">Trading since <span>{inception_display}</span></div>
+            <!-- Hero Section: The Anchor -->
+            <div class="hero-section">
+                <div class="badge">#1 Spotlight</div>
+                <div class="strategy-name">{name}</div>
+                <div class="inception-date">Trading since <span>{inception_display}</span></div>
 
-            <!-- Main Performance Stats -->
-            <div class="stats-container">
-                <div class="stat-box"><div class="stat-value">{return_val:,.2f}%</div><div class="stat-label">Total Return</div></div>
-                <div class="stat-box"><div class="stat-value">{copiers:,}</div><div class="stat-label">Copiers</div></div>
-                <div class="stat-box"><div class="stat-value">{fee_display}</div><div class="stat-label">Performance Fee</div></div>
+                <!-- Main Performance Stats -->
+                <div class="stats-container">
+                    <div class="stat-box"><div class="stat-value">{return_val:,.2f}%</div><div class="stat-label">Total Return</div></div>
+                    <div class="stat-box"><div class="stat-value">{copiers:,}</div><div class="stat-label">Copiers</div></div>
+                    <div class="stat-box"><div class="stat-value">{fee_display}</div><div class="stat-label">Performance Fee</div></div>
+                </div>
             </div>
+
+            <!-- Content Sections -->
+            <div class="content-sections">
 
             <!-- Trade Performance Section -->
             <div class="trades-section">
@@ -511,7 +525,9 @@ def index():
 
             <button class="copy-btn">Copy Strategy</button>
             <p style="font-size: 10px; color: #95a5a6; margin-top: 20px;"><a href="/logout" style="color: #7f8c8d; text-decoration: none;">Logout</a></p>
-        </div>
+
+            </div> <!-- End content-sections -->
+        </div> <!-- End card -->
     </body>
     </html>
     '''
