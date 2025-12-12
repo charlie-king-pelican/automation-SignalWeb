@@ -254,12 +254,25 @@ def index():
                 name = strategy.get('Name', 'Unknown')
                 copiers = strategy.get('NumCopiers', 0)
                 strategy_id = strategy.get('Id')
-                fee = strategy.get('Fee')
-                # Performance fee is nullable, convert to percentage if exists
-                if fee is not None:
-                    performance_fee = fee * 100  # Convert to percentage
-                else:
-                    performance_fee = 0.0
+
+                # Fee is not in discover endpoint, need to fetch from detail endpoint
+                if strategy_id:
+                    # Get full strategy details including Fee
+                    try:
+                        detail_resp = requests.get(
+                            f"{API_BASE_URL}/api/strategies/{strategy_id}",
+                            headers=headers
+                        )
+                        if detail_resp.status_code == 200:
+                            strategy_detail = detail_resp.json()
+                            fee = strategy_detail.get('Fee')
+                            # Performance fee is nullable, convert to percentage if exists
+                            if fee is not None:
+                                performance_fee = fee * 100  # Convert to percentage
+                            else:
+                                performance_fee = 0.0
+                    except Exception:
+                        pass  # If detail fetch fails, use default 0.0
 
                 # Get detailed stats for this strategy
                 if strategy_id:
@@ -323,6 +336,9 @@ def index():
         win_rate = (wins / total_trades) * 100
 
     inception_display = inception_date if inception_date else "Unknown"
+
+    # Format performance fee display
+    fee_display = "Free" if performance_fee == 0 else f"{performance_fee:.1f}%"
 
     # Format currency values with thousands separators
     def format_currency(value, code="USD"):
@@ -400,7 +416,7 @@ def index():
             <div class="stats-container">
                 <div class="stat-box"><div class="stat-value">{return_val:,.2f}%</div><div class="stat-label">Total Return</div></div>
                 <div class="stat-box"><div class="stat-value">{copiers:,}</div><div class="stat-label">Copiers</div></div>
-                <div class="stat-box"><div class="stat-value">{performance_fee:.1f}%</div><div class="stat-label">Performance Fee</div></div>
+                <div class="stat-box"><div class="stat-value">{fee_display}</div><div class="stat-label">Performance Fee</div></div>
             </div>
 
             <!-- Trade Performance Section -->
