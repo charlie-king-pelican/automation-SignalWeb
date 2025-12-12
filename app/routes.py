@@ -119,12 +119,39 @@ def register_routes(app):
 
     @app.route('/debug/api')
     def debug_api():
-        """Debug route - cleared for production."""
+        """Debug route - display raw JSON for open and closed signals."""
         token = session.get('access_token')
         if not token:
             return redirect(url_for('index'))
 
-        return render_template('debug.html')
+        copier_id = request.args.get('copier_id')
+
+        open_signals = None
+        closed_signals = None
+        error_message = None
+
+        if copier_id:
+            try:
+                # Calculate date range for closed signals (last 30 days)
+                from datetime import datetime, timedelta
+                end_dt = datetime.utcnow()
+                start_dt = end_dt - timedelta(days=30)
+
+                # Format as ISO 8601 strings
+                start_dt_iso = start_dt.strftime('%Y-%m-%dT%H:%M:%SZ')
+                end_dt_iso = end_dt.strftime('%Y-%m-%dT%H:%M:%SZ')
+
+                # Fetch signals
+                open_signals = services.get_open_signals(copier_id, token)
+                closed_signals = services.get_closed_signals(copier_id, token, start_dt_iso, end_dt_iso)
+            except Exception as e:
+                error_message = f"Error fetching signals: {str(e)}"
+
+        return render_template('debug.html',
+                             copier_id=copier_id,
+                             open_signals=open_signals,
+                             closed_signals=closed_signals,
+                             error_message=error_message)
 
     @app.route('/logout')
     def logout():

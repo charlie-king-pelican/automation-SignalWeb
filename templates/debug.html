@@ -3,14 +3,191 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Debug - Copy Trade Dashboard</title>
+    <title>Debug API - Copy Trade Dashboard</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+    <style>
+        body.debug-page {
+            display: block;
+            padding: 40px;
+            background: #f5f5f5;
+            min-height: 100vh;
+        }
+
+        .debug-wrapper {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .debug-header {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .debug-header h1 {
+            margin: 0;
+            font-size: 24px;
+            color: #333;
+        }
+
+        .back-link {
+            color: #2962ff;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        .info-box {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 12px;
+            padding: 20px 25px;
+            margin-bottom: 20px;
+            color: #856404;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .info-box strong {
+            color: #533f03;
+        }
+
+        .signal-section {
+            background: white;
+            padding: 25px 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+        }
+
+        .signal-section h2 {
+            margin: 0 0 15px 0;
+            font-size: 18px;
+            color: #333;
+            border-bottom: 2px solid #e8ecf1;
+            padding-bottom: 10px;
+        }
+
+        .signal-section pre {
+            background: #f7f9fb;
+            border: 1px solid #e8ecf1;
+            border-radius: 8px;
+            padding: 20px;
+            overflow-x: auto;
+            font-size: 13px;
+            line-height: 1.5;
+            margin: 0;
+            color: #1a1a1a;
+            font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+        }
+
+        .no-copier-message {
+            text-align: center;
+            padding: 60px 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .no-copier-message h2 {
+            color: #ff9800;
+            margin-bottom: 15px;
+        }
+
+        .no-copier-message p {
+            color: #7f8c8d;
+            font-size: 16px;
+            margin-bottom: 25px;
+        }
+
+        .no-copier-message a {
+            display: inline-block;
+            padding: 12px 30px;
+            background: #2962ff;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: opacity 0.2s;
+        }
+
+        .no-copier-message a:hover {
+            opacity: 0.9;
+        }
+
+        .error-box {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 12px;
+            padding: 20px 25px;
+            margin-bottom: 20px;
+            color: #721c24;
+            font-size: 14px;
+        }
+    </style>
 </head>
 <body class="debug-page">
-    <div class="debug-container">
-        <h2>Debug Mode</h2>
-        <p>Debug endpoint is currently cleared.<br>Ready for new debugging tasks.</p>
-        <a href="/">← Back to Dashboard</a>
+    <div class="debug-wrapper">
+        <div class="debug-header">
+            <h1>Debug API - Raw Signals JSON</h1>
+            <a href="/" class="back-link">← Back to Dashboard</a>
+        </div>
+
+        {% if not copier_id %}
+        <div class="no-copier-message">
+            <h2>⚠️ No Copier Selected</h2>
+            <p>Please go to the dashboard and select an account from the dropdown.</p>
+            <a href="/">Go to Dashboard</a>
+        </div>
+        {% else %}
+        <div class="info-box">
+            <strong>Copier ID:</strong> {{ copier_id }}<br>
+            <strong>Date Range:</strong> Last 30 days (UTC)<br>
+            <strong>Note:</strong> This shows raw API responses for inspection before building the trades table UI.
+        </div>
+
+        {% if error_message %}
+        <div class="error-box">
+            <strong>Error:</strong> {{ error_message }}
+        </div>
+        {% endif %}
+
+        <div class="signal-section">
+            <h2>📊 Open Signals (Current Positions)</h2>
+            <pre>{{ open_signals|tojson(indent=2) }}</pre>
+        </div>
+
+        <div class="signal-section">
+            <h2>📈 Closed Signals (Last 30 Days)</h2>
+            <pre>{{ closed_signals|tojson(indent=2) }}</pre>
+        </div>
+        {% endif %}
     </div>
+
+    <script>
+        // Auto-redirect to include copier_id from localStorage if not in URL
+        (function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const copierIdInUrl = urlParams.get('copier_id');
+
+            // Only redirect if copier_id is not already in URL
+            if (!copierIdInUrl) {
+                const selectedCopierId = localStorage.getItem('selectedAccountId');
+                if (selectedCopierId) {
+                    // Redirect with copier_id parameter
+                    window.location.href = '/debug/api?copier_id=' + selectedCopierId;
+                }
+            }
+        })();
+    </script>
 </body>
 </html>

@@ -673,6 +673,13 @@ body.accounts-page {
     margin-bottom: 5px;
 }
 
+/* Override stat-value for accounts page - smaller font size */
+.account-stats .stat-value {
+    font-size: 16px;
+    font-weight: 700;
+    color: #2962ff;
+}
+
 .no-data {
     text-align: center;
     padding: 60px 20px;
