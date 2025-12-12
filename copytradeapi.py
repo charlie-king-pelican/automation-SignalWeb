@@ -87,6 +87,30 @@ def get_profile_info(token):
     except Exception:
         return None
 
+def render_account_selector(accounts):
+    if not accounts:
+        return ""
+
+    options = ["<option value='' disabled selected>Select account</option>"]
+    for acc in accounts:
+        if not acc.get('enabled'):
+            continue
+        label = f"{acc.get('name')} • {acc.get('server')} • {acc.get('username')}"
+        acc_id = acc.get('id')
+        acc_type = acc.get('type', 'copier')
+        options.append(
+            f"<option value='{acc_id}' data-type='{acc_type}'>{label}</option>"
+        )
+
+    return f"""
+    <div class='account-selector-wrapper'>
+        <div class='account-selector-label'>Account</div>
+        <select id='accountSelector' class='account-selector' onchange='handleAccountChange()'>
+            {''.join(options)}
+        </select>
+    </div>
+    """
+
 @app.route('/')
 def index():
     # --- 1. AUTHENTICATION & TOKEN EXCHANGE ---
@@ -201,6 +225,12 @@ def index():
     # --- 2. FETCH PROFILE INFO & COPIERS ---
     profile_info = get_profile_info(token)
 
+    headers = {
+        'Authorization': f"Bearer {token}",
+        'Content-Type': 'application/json'
+    }
+
+
     # Get list of accounts (copiers and strategies) for switching
     accounts_list = []
     profile_id = None
@@ -227,18 +257,7 @@ def index():
                         })
 
                 # Get all strategies (MetaTrader accounts that provide signals)
-                resp = requests.get(f"{API_BASE_URL}/api/profiles/{profile_id}/strategies", headers=headers)
-                if resp.status_code == 200:
-                    strategies_data = resp.json()
-                    for strategy in strategies_data:
-                        accounts_list.append({
-                            'id': strategy.get('Id'),
-                            'name': strategy.get('Name'),
-                            'server': strategy.get('Connection', {}).get('ServerCode', 'N/A'),
-                            'username': strategy.get('Connection', {}).get('Username', 'N/A'),
-                            'enabled': True,  # Strategies are always "enabled" for viewing
-                            'type': 'strategy'
-                        })
+                pass
     except Exception:
         pass  # If account fetch fails, just show empty dropdown
 
@@ -503,7 +522,7 @@ def index():
                 <div class="inception-date">Trading since <span>{inception_display}</span></div>
 
                 <!-- Account Selector -->
-                {'<div class="account-selector-wrapper"><label class="account-selector-label">MetaTrader Account</label><select id="accountSelector" class="account-selector" onchange="handleAccountChange()" data-accounts=\'' + json.dumps(accounts_list) + '\'><option value="">Select an account...</option>' + ''.join([f'<option value="{acc["id"]}" data-type="{acc["type"]}" {"disabled" if not acc["enabled"] else ""}>[{"COPIER" if acc["type"] == "copier" else "STRATEGY"}] {acc["name"]} • {acc["server"]} • #{acc["username"]}{"  (Disabled)" if not acc["enabled"] else ""}</option>' for acc in accounts_list]) + '</select><div id="strategyWarning" class="strategy-warning"><span class="strategy-warning-icon">⚠️</span><div class="strategy-warning-text">This is a strategy account. You cannot copy signals to a strategy account. Please select a copier account.</div></div></div>' if accounts_list else ''}
+                {render_account_selector(accounts_list)}
 
                 <!-- Main Performance Stats -->
                 <div class="stats-container">
@@ -606,81 +625,65 @@ def index():
                 </div>
             </div>
 
-            <button class="copy-btn">Copy Strategy</button>
+            <button class="copy-btn hidden">Copy Strategy</button>
             <p style="font-size: 10px; color: #95a5a6; margin-top: 20px;"><a href="/logout" style="color: #7f8c8d; text-decoration: none;">Logout</a></p>
 
             </div> <!-- End content-sections -->
         </div> <!-- End card -->
 
         <script>
-            // Account switching functionality
-            function handleAccountChange() {{
+            function handleAccountChange() {
                 const selector = document.getElementById('accountSelector');
+                if (!selector) return;
+
                 const selectedOption = selector.options[selector.selectedIndex];
                 const selectedAccountId = selector.value;
                 const accountType = selectedOption ? selectedOption.getAttribute('data-type') : null;
 
                 const copyBtn = document.querySelector('.copy-btn');
-                const warning = document.getElementById('strategyWarning');
 
-                if (selectedAccountId && accountType) {{
-                    // Store selected account ID and type
+                if (selectedAccountId) {
                     localStorage.setItem('selectedAccountId', selectedAccountId);
-                    localStorage.setItem('selectedAccountType', accountType);
-                    console.log('Selected account:', selectedAccountId, 'Type:', accountType);
+                    if (accountType) localStorage.setItem('selectedAccountType', accountType);
 
-                    if (accountType === 'strategy') {{
-                        // Strategy account selected - hide copy button, show warning
-                        if (copyBtn) copyBtn.classList.add('hidden');
-                        if (warning) warning.style.display = 'flex';
-                    }} else {{
-                        // Copier account selected - show copy button, hide warning
-                        if (copyBtn) copyBtn.classList.remove('hidden');
-                        if (warning) warning.style.display = 'none';
-                    }}
-                }} else {{
-                    // No account selected
+                    if (copyBtn) copyBtn.classList.remove('hidden');
+                } else {
+                    localStorage.removeItem('selectedAccountId');
+                    localStorage.removeItem('selectedAccountType');
+
                     if (copyBtn) copyBtn.classList.add('hidden');
-                    if (warning) warning.style.display = 'none';
-                }}
-            }}
+                }
+            }
 
-            // On page load, restore the selected account from localStorage
-            window.addEventListener('DOMContentLoaded', function() {{
+            window.addEventListener('DOMContentLoaded', function() {
                 const selector = document.getElementById('accountSelector');
-                if (selector) {{
-                    const savedAccountId = localStorage.getItem('selectedAccountId');
-                    if (savedAccountId) {{
-                        selector.value = savedAccountId;
-                        handleAccountChange(); // Trigger logic to show/hide button
-                    }} else if (selector.options.length > 1) {{
-                        // Auto-select first enabled copier account if none selected
-                        for (let i = 1; i < selector.options.length; i++) {{
-                            const option = selector.options[i];
-                            if (!option.disabled && option.getAttribute('data-type') === 'copier') {{
-                                selector.value = option.value;
-                                handleAccountChange();
-                                break;
-                            }}
-                        }}
-                    }}
-                }}
-            }});
+                if (!selector) return;
 
-            // Helper function to get currently selected account ID (for API calls)
-            function getSelectedAccountId() {{
+                const savedAccountId = localStorage.getItem('selectedAccountId');
+                if (savedAccountId) {
+                    selector.value = savedAccountId;
+                    handleAccountChange();
+                    return;
+                }
+
+                // Auto-select first non-disabled option (first real account)
+                for (let i = 0; i < selector.options.length; i++) {
+                    const option = selector.options[i];
+                    if (!option.disabled && option.value) {
+                        selector.value = option.value;
+                        handleAccountChange();
+                        break;
+                    }
+                }
+            });
+
+            function getSelectedAccountId() {
                 return localStorage.getItem('selectedAccountId');
-            }}
+            }
 
-            // Helper function to check if selected account is a copier (can copy)
-            function canCopyToSelectedAccount() {{
-                return localStorage.getItem('selectedAccountType') === 'copier';
-            }}
-
-            // Helper function to get selected account type
-            function getSelectedAccountType() {{
+            function getSelectedAccountType() {
                 return localStorage.getItem('selectedAccountType');
-            }}
+            }
         </script>
     </body>
     </html>
