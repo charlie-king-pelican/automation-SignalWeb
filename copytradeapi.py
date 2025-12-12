@@ -220,6 +220,16 @@ def index():
     max_per_month = 0
     wins = 0
     losses = 0
+    realised_pnl = 0
+    unrealised_pnl = 0
+    max_drawdown = 0
+    balance = 0
+    credit = 0
+    leverage = 0
+    copiers_year_profit = 0
+    copiers_month_profit = 0
+    copiers_total_balance = 0
+    currency_code = "USD"
 
     try:
         resp = requests.get(endpoint, headers=headers, params=params)
@@ -268,6 +278,28 @@ def index():
                             max_per_month = trades_data.get('MaxPerMonth', 0)
                             wins = trades_data.get('Wins', 0)
                             losses = trades_data.get('Losses', 0)
+
+                            # Extract profitability statistics
+                            profitability_data = stats_data.get('Profitability', {}).get('Inception', {})
+                            realised_pnl = profitability_data.get('RealisedPnl', 0)
+                            unrealised_pnl = profitability_data.get('UnrealisedPnl', 0)
+                            max_drawdown = abs(profitability_data.get('MaxDrawdown', 0)) * 100  # Convert to positive percentage
+
+                            # Extract account status
+                            status_data = stats_data.get('Status', {})
+                            balance = status_data.get('Balance', 0)
+                            credit = status_data.get('Credit', 0)
+                            leverage = status_data.get('Leverage', 0)
+
+                            # Extract copiers performance
+                            copiers_profit_data = stats_data.get('CopiersProfit', {})
+                            copiers_year_profit = copiers_profit_data.get('Year', 0)
+                            copiers_month_profit = copiers_profit_data.get('Month', 0)
+
+                            copiers_balance_data = stats_data.get('CopiersBalance', {})
+                            copiers_total_balance = copiers_balance_data.get('Balance', 0)
+
+                            currency_code = stats_data.get('CurrencyCode', 'USD')
                     except Exception:
                         pass  # If stats fetch fails, just use default values
     except Exception as e:
@@ -281,36 +313,68 @@ def index():
 
     inception_display = inception_date if inception_date else "Unknown"
 
+    # Format currency values with thousands separators
+    def format_currency(value, code="USD"):
+        return f"{code} {value:,.2f}"
+
     html = f'''
     <!DOCTYPE html>
     <html>
     <head>
         <style>
-            body {{ background-color: #f4f6f8; font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; position: relative; padding: 20px; }}
+            body {{ background-color: #f4f6f8; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; position: relative; padding: 20px; }}
             .profile-info {{ position: absolute; top: 20px; left: 20px; background: white; padding: 15px 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); text-decoration: none; display: block; transition: transform 0.2s, box-shadow 0.2s; }}
             .profile-info:hover {{ transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,0,0,0.12); cursor: pointer; }}
             .profile-name {{ font-size: 16px; font-weight: 600; color: #333; margin-bottom: 5px; }}
             .profile-accounts {{ font-size: 12px; color: #7f8c8d; }}
             .profile-accounts span {{ color: #2962ff; font-weight: 600; }}
-            .card {{ background: white; width: 550px; max-width: 90vw; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); text-align: center; }}
+            .card {{ background: white; width: 650px; max-width: 95vw; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); text-align: center; }}
             .badge {{ background-color: #f5a623; color: white; padding: 6px 16px; border-radius: 20px; font-weight: bold; font-size: 12px; margin-bottom: 15px; display:inline-block; }}
-            .strategy-name {{ font-size: 26px; color: #333; margin-bottom: 8px; font-weight: 600; }}
+            .strategy-name {{ font-size: 28px; color: #333; margin-bottom: 8px; font-weight: 700; }}
             .inception-date {{ font-size: 13px; color: #7f8c8d; margin-bottom: 30px; }}
             .inception-date span {{ color: #2962ff; font-weight: 600; }}
-            .stats-container {{ display: flex; justify-content: space-between; background-color: #f8f9fa; border-radius: 12px; padding: 25px 15px; margin-bottom: 20px; }}
+
+            /* Main stats */
+            .stats-container {{ display: flex; justify-content: space-between; background-color: #f8f9fa; border-radius: 12px; padding: 25px 15px; margin-bottom: 15px; }}
             .stat-box {{ text-align: center; flex: 1; border-right: 1px solid #e0e0e0; }}
             .stat-box:last-child {{ border-right: none; }}
-            .stat-value {{ font-size: 22px; font-weight: 700; color: #2962ff; margin-bottom: 5px; }}
+            .stat-value {{ font-size: 24px; font-weight: 700; color: #2962ff; margin-bottom: 5px; }}
             .stat-label {{ font-size: 11px; color: #7f8c8d; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }}
-            .trades-section {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; padding: 25px; color: white; margin-bottom: 20px; }}
-            .trades-title {{ font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px; opacity: 0.9; font-weight: 600; }}
-            .trades-grid {{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }}
+
+            /* Trade Performance Section */
+            .trades-section {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; padding: 25px; color: white; margin-bottom: 15px; }}
+            .section-title {{ font-size: 13px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px; opacity: 0.9; font-weight: 600; }}
+            .trades-grid {{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }}
             .trade-stat {{ background: rgba(255,255,255,0.15); padding: 15px; border-radius: 8px; backdrop-filter: blur(10px); }}
-            .trade-stat-value {{ font-size: 24px; font-weight: 700; margin-bottom: 5px; }}
-            .trade-stat-label {{ font-size: 11px; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px; }}
-            .win-loss-row {{ display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-top: 15px; }}
-            .copy-btn {{ background-color: #2962ff; color: white; border: none; padding: 12px 30px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 10px; transition: opacity 0.2s; }}
-            .copy-btn:hover {{ opacity: 0.9; }}
+            .trade-stat-value {{ font-size: 22px; font-weight: 700; margin-bottom: 5px; }}
+            .trade-stat-label {{ font-size: 10px; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px; }}
+            .win-loss-row {{ display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 12px; }}
+
+            /* Profitability & Risk Section */
+            .profitability-section {{ background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); border-radius: 12px; padding: 25px; color: white; margin-bottom: 15px; }}
+            .profit-grid {{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }}
+            .profit-stat {{ background: rgba(255,255,255,0.15); padding: 15px; border-radius: 8px; backdrop-filter: blur(10px); }}
+            .profit-stat-value {{ font-size: 20px; font-weight: 700; margin-bottom: 5px; }}
+            .profit-stat-label {{ font-size: 10px; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px; }}
+            .negative {{ color: #ff6b6b; }}
+
+            /* Account Status Section */
+            .account-section {{ background: linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%); border-radius: 12px; padding: 25px; color: white; margin-bottom: 15px; }}
+            .account-grid {{ display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }}
+            .account-stat {{ background: rgba(255,255,255,0.15); padding: 15px; border-radius: 8px; backdrop-filter: blur(10px); }}
+            .account-stat-value {{ font-size: 20px; font-weight: 700; margin-bottom: 5px; }}
+            .account-stat-label {{ font-size: 10px; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px; }}
+
+            /* Copiers Performance Section */
+            .copiers-section {{ background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%); border-radius: 12px; padding: 25px; color: white; margin-bottom: 20px; }}
+            .copiers-grid {{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }}
+            .copier-stat {{ background: rgba(255,255,255,0.15); padding: 15px; border-radius: 8px; backdrop-filter: blur(10px); }}
+            .copier-stat-value {{ font-size: 20px; font-weight: 700; margin-bottom: 5px; }}
+            .copier-stat-label {{ font-size: 10px; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px; }}
+
+            /* Button */
+            .copy-btn {{ background-color: #2962ff; color: white; border: none; padding: 14px 40px; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 10px; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 4px 15px rgba(41, 98, 255, 0.3); }}
+            .copy-btn:hover {{ transform: translateY(-2px); box-shadow: 0 6px 20px rgba(41, 98, 255, 0.4); }}
         </style>
     </head>
     <body>
@@ -320,14 +384,16 @@ def index():
             <div class="strategy-name">{name}</div>
             <div class="inception-date">Trading since <span>{inception_display}</span></div>
 
+            <!-- Main Performance Stats -->
             <div class="stats-container">
-                <div class="stat-box"><div class="stat-value">{return_val:,.2f}%</div><div class="stat-label">Return</div></div>
+                <div class="stat-box"><div class="stat-value">{return_val:,.2f}%</div><div class="stat-label">Total Return</div></div>
                 <div class="stat-box"><div class="stat-value">{copiers:,}</div><div class="stat-label">Copiers</div></div>
                 <div class="stat-box"><div class="stat-value">{win_rate:.1f}%</div><div class="stat-label">Win Rate</div></div>
             </div>
 
+            <!-- Trade Performance Section -->
             <div class="trades-section">
-                <div class="trades-title">Trade Performance</div>
+                <div class="section-title">📊 Trade Performance</div>
                 <div class="trades-grid">
                     <div class="trade-stat">
                         <div class="trade-stat-value">{total_trades:,}</div>
@@ -358,8 +424,61 @@ def index():
                 </div>
             </div>
 
+            <!-- Profitability & Risk Section -->
+            <div class="profitability-section">
+                <div class="section-title">💰 Profitability & Risk</div>
+                <div class="profit-grid">
+                    <div class="profit-stat">
+                        <div class="profit-stat-value">{format_currency(realised_pnl, currency_code)}</div>
+                        <div class="profit-stat-label">Realised P&L</div>
+                    </div>
+                    <div class="profit-stat">
+                        <div class="profit-stat-value">{format_currency(unrealised_pnl, currency_code)}</div>
+                        <div class="profit-stat-label">Unrealised P&L</div>
+                    </div>
+                    <div class="profit-stat">
+                        <div class="profit-stat-value">{max_drawdown:.2f}%</div>
+                        <div class="profit-stat-label">Max Drawdown</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Account Status Section -->
+            <div class="account-section">
+                <div class="section-title">💳 Account Status</div>
+                <div class="account-grid">
+                    <div class="account-stat">
+                        <div class="account-stat-value">{format_currency(balance, currency_code)}</div>
+                        <div class="account-stat-label">Balance</div>
+                    </div>
+                    <div class="account-stat">
+                        <div class="account-stat-value">1:{leverage}</div>
+                        <div class="account-stat-label">Leverage</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Copiers Performance Section -->
+            <div class="copiers-section">
+                <div class="section-title">👥 Copiers Performance</div>
+                <div class="copiers-grid">
+                    <div class="copier-stat">
+                        <div class="copier-stat-value">{format_currency(copiers_year_profit, currency_code)}</div>
+                        <div class="copier-stat-label">Year Profit</div>
+                    </div>
+                    <div class="copier-stat">
+                        <div class="copier-stat-value">{format_currency(copiers_month_profit, currency_code)}</div>
+                        <div class="copier-stat-label">Month Profit</div>
+                    </div>
+                    <div class="copier-stat">
+                        <div class="copier-stat-value">{format_currency(copiers_total_balance, currency_code)}</div>
+                        <div class="copier-stat-label">Total AUM</div>
+                    </div>
+                </div>
+            </div>
+
             <button class="copy-btn">Copy Strategy</button>
-            <p style="font-size: 10px; color: #95a5a6; margin-top: 20px;"><a href="/logout">Logout</a></p>
+            <p style="font-size: 10px; color: #95a5a6; margin-top: 20px;"><a href="/logout" style="color: #7f8c8d; text-decoration: none;">Logout</a></p>
         </div>
     </body>
     </html>
