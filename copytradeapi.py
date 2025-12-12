@@ -509,6 +509,14 @@ def index():
             .copy-btn {{ background-color: #2962ff; color: white; border: none; padding: 14px 40px; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 10px; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 4px 15px rgba(41, 98, 255, 0.3); }}
             .copy-btn:hover {{ transform: translateY(-2px); box-shadow: 0 6px 20px rgba(41, 98, 255, 0.4); }}
 
+            /* Page Tabs (Overview / Trades) */
+            .page-tabs {{ display: flex; gap: 10px; margin: 18px 0 0; }}
+            .page-tab-btn {{ border: 2px solid #e8ecf1; background: #fff; color: #1a1a1a; padding: 10px 14px; border-radius: 10px; font-size: 13px; font-weight: 800; cursor: pointer; transition: all 0.2s; }}
+            .page-tab-btn:hover {{ border-color: #2962ff; box-shadow: 0 4px 12px rgba(41,98,255,0.1); }}
+            .page-tab-btn.active {{ background: #2962ff; color: #fff; border-color: #2962ff; }}
+            .page-section {{ display: none; }}
+            .page-section.active {{ display: block; }}
+
             /* Trades Tabs + Table */
             .trades-tabs {{ display: flex; gap: 10px; margin: 10px 0 18px; }}
             .tab-btn {{ border: 2px solid #e8ecf1; background: #fff; color: #1a1a1a; padding: 10px 14px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s; }}
@@ -544,10 +552,18 @@ def index():
                     <div class="stat-box"><div class="stat-value">{copiers:,}</div><div class="stat-label">Copiers</div></div>
                     <div class="stat-box"><div class="stat-value">{fee_display}</div><div class="stat-label">Performance Fee</div></div>
                 </div>
+
+                <!-- Page Tabs -->
+                <div class="page-tabs">
+                    <button id="pageTabOverview" class="page-tab-btn active" type="button" onclick="showPageTab('overview')">Overview</button>
+                    <button id="pageTabTrades" class="page-tab-btn" type="button" onclick="showPageTab('trades')">Trades</button>
+                </div>
             </div>
 
             <!-- Content Sections -->
             <div class="content-sections">
+
+            <div id="overviewSection" class="page-section active">
 
             <!-- Trade Performance Section -->
             <div class="trades-section">
@@ -580,79 +596,6 @@ def index():
                         <div class="trade-stat-label">Win Rate</div>
                     </div>
                 </div>
-            </div>
-
-            <!-- Trades Section (Open / Closed) -->
-            <div class="section-title" style="margin-top: 10px;">TRADES</div>
-            <div class="trades-tabs">
-                <button id="tabOpen" class="tab-btn active" type="button" onclick="showTradesTab('open')">Open</button>
-                <button id="tabClosed" class="tab-btn" type="button" onclick="showTradesTab('closed')">Closed</button>
-            </div>
-
-            <div id="panelOpen" class="trades-panel active">
-                <table class="trades-table">
-                    <thead>
-                        <tr>
-                            <th>Symbol</th>
-                            <th>Side</th>
-                            <th>Lots</th>
-                            <th>Open Price</th>
-                            <th class="muted">Open Time</th>
-                            <th>PnL</th>
-                        </tr>
-                    </thead>
-                    <tbody id="openTradesBody">
-                        <tr>
-                            <td>EURUSD</td>
-                            <td><span class="pill buy">Buy</span></td>
-                            <td>0.10</td>
-                            <td>1.08540</td>
-                            <td class="muted">2025-12-12 12:21</td>
-                            <td>+12.34</td>
-                        </tr>
-                        <tr>
-                            <td>XAUUSD</td>
-                            <td><span class="pill sell">Sell</span></td>
-                            <td>0.05</td>
-                            <td>2043.20</td>
-                            <td class="muted">2025-12-12 10:03</td>
-                            <td>-5.12</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <div id="panelClosed" class="trades-panel">
-                <table class="trades-table">
-                    <thead>
-                        <tr>
-                            <th>Symbol</th>
-                            <th>Side</th>
-                            <th>Lots</th>
-                            <th>Open</th>
-                            <th>Close</th>
-                            <th>PnL</th>
-                        </tr>
-                    </thead>
-                    <tbody id="closedTradesBody">
-                        <tr>
-                            <td>GBPUSD</td>
-                            <td><span class="pill buy">Buy</span></td>
-                            <td>0.20</td>
-                            <td>1.26310</td>
-                            <td>1.26850</td>
-                            <td>+108.00</td>
-                        </tr>
-                        <tr>
-                            <td>US30</td>
-                            <td><span class="pill sell">Sell</span></td>
-                            <td>0.01</td>
-                            <td>38210</td>
-                            <td>38130</td>
-                            <td>+80.00</td>
-                        </tr>
-                    </tbody>
-                </table>
             </div>
 
             <!-- Profitability & Risk Section -->
@@ -712,6 +655,82 @@ def index():
                 </div>
             </div>
 
+            </div>
+
+            <div id="tradesSection" class="page-section">
+                <div class="section-title" style="margin-top: 10px;">TRADES</div>
+                <div class="trades-tabs">
+                    <button id="tabOpen" class="tab-btn active" type="button" onclick="showTradesTab('open')">Open</button>
+                    <button id="tabClosed" class="tab-btn" type="button" onclick="showTradesTab('closed')">Closed</button>
+                </div>
+
+                <div id="panelOpen" class="trades-panel active">
+                    <table class="trades-table">
+                        <thead>
+                            <tr>
+                                <th>Symbol</th>
+                                <th>Side</th>
+                                <th>Lots</th>
+                                <th>Open Price</th>
+                                <th class="muted">Open Time</th>
+                                <th>PnL</th>
+                            </tr>
+                        </thead>
+                        <tbody id="openTradesBody">
+                            <tr>
+                                <td>EURUSD</td>
+                                <td><span class="pill buy">Buy</span></td>
+                                <td>0.10</td>
+                                <td>1.08540</td>
+                                <td class="muted">2025-12-12 12:21</td>
+                                <td>+12.34</td>
+                            </tr>
+                            <tr>
+                                <td>XAUUSD</td>
+                                <td><span class="pill sell">Sell</span></td>
+                                <td>0.05</td>
+                                <td>2043.20</td>
+                                <td class="muted">2025-12-12 10:03</td>
+                                <td>-5.12</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div id="panelClosed" class="trades-panel">
+                    <table class="trades-table">
+                        <thead>
+                            <tr>
+                                <th>Symbol</th>
+                                <th>Side</th>
+                                <th>Lots</th>
+                                <th>Open</th>
+                                <th>Close</th>
+                                <th>PnL</th>
+                            </tr>
+                        </thead>
+                        <tbody id="closedTradesBody">
+                            <tr>
+                                <td>GBPUSD</td>
+                                <td><span class="pill buy">Buy</span></td>
+                                <td>0.20</td>
+                                <td>1.26310</td>
+                                <td>1.26850</td>
+                                <td>+108.00</td>
+                            </tr>
+                            <tr>
+                                <td>US30</td>
+                                <td><span class="pill sell">Sell</span></td>
+                                <td>0.01</td>
+                                <td>38210</td>
+                                <td>38130</td>
+                                <td>+80.00</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
             <button class="copy-btn hidden">Copy Strategy</button>
             <p style="font-size: 10px; color: #95a5a6; margin-top: 20px;"><a href="/logout" style="color: #7f8c8d; text-decoration: none;">Logout</a></p>
 
@@ -727,18 +746,18 @@ def index():
                 const selectedAccountId = selector.value;
                 const accountType = selectedOption ? selectedOption.getAttribute('data-type') : null;
 
-                const copyBtn = document.querySelector('.copy-btn');
+                const copyBtns = document.querySelectorAll('.copy-btn');
 
                 if (selectedAccountId) {{
                     localStorage.setItem('selectedAccountId', selectedAccountId);
                     if (accountType) localStorage.setItem('selectedAccountType', accountType);
 
-                    if (copyBtn) copyBtn.classList.remove('hidden');
+                    copyBtns.forEach(btn => btn.classList.remove('hidden'));
                 }} else {{
                     localStorage.removeItem('selectedAccountId');
                     localStorage.removeItem('selectedAccountType');
 
-                    if (copyBtn) copyBtn.classList.add('hidden');
+                    copyBtns.forEach(btn => btn.classList.add('hidden'));
                 }}
             }}
 
@@ -750,22 +769,45 @@ def index():
                 if (savedAccountId) {{
                     selector.value = savedAccountId;
                     handleAccountChange();
-                    return;
-                }}
-
-                // Auto-select first non-disabled option (first real account)
-                for (let i = 0; i < selector.options.length; i++) {{
-                    const option = selector.options[i];
-                    if (!option.disabled && option.value) {{
-                        selector.value = option.value;
-                        handleAccountChange();
-                        break;
+                    // Continue to page tab logic
+                }} else {{
+                    // Auto-select first non-disabled option (first real account)
+                    for (let i = 0; i < selector.options.length; i++) {{
+                        const option = selector.options[i];
+                        if (!option.disabled && option.value) {{
+                            selector.value = option.value;
+                            handleAccountChange();
+                            break;
+                        }}
                     }}
                 }}
+
+                const savedPageTab = localStorage.getItem('selectedPageTab') || 'overview';
+                showPageTab(savedPageTab);
 
                 // Default trades tab
                 showTradesTab('open');
             }});
+            function showPageTab(which) {{
+                const btnOverview = document.getElementById('pageTabOverview');
+                const btnTrades = document.getElementById('pageTabTrades');
+                const overview = document.getElementById('overviewSection');
+                const trades = document.getElementById('tradesSection');
+
+                if (which === 'trades') {{
+                    if (btnTrades) btnTrades.classList.add('active');
+                    if (btnOverview) btnOverview.classList.remove('active');
+                    if (trades) trades.classList.add('active');
+                    if (overview) overview.classList.remove('active');
+                    localStorage.setItem('selectedPageTab', 'trades');
+                }} else {{
+                    if (btnOverview) btnOverview.classList.add('active');
+                    if (btnTrades) btnTrades.classList.remove('active');
+                    if (overview) overview.classList.add('active');
+                    if (trades) trades.classList.remove('active');
+                    localStorage.setItem('selectedPageTab', 'overview');
+                }}
+            }
 
             function getSelectedAccountId() {{
                 return localStorage.getItem('selectedAccountId');
