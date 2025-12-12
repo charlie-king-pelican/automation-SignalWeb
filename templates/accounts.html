@@ -7,9 +7,16 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
 </head>
 <body class="accounts-page">
+    <!-- Navigation -->
+    <div class="page-nav">
+        <a href="/" class="nav-link">Dashboard</a>
+        <a href="/accounts" class="nav-link active">Accounts</a>
+        <a href="/copying" class="nav-link">Copying</a>
+        <a href="/logout" class="nav-link nav-link-logout">Logout</a>
+    </div>
+
     <div class="header">
         <h1>{{ profile_name }}'s Accounts</h1>
-        <a href="/" class="back-link">← Back to Dashboard</a>
     </div>
     <div class="container">
         {% if not copiers %}

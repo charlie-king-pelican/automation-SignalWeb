@@ -264,3 +264,120 @@ def register_routes(app):
         else:
             # TODO: Add flash message for error
             return redirect(url_for('index', copier_id=copier_id))
+
+    @app.route('/copying')
+    def copying():
+        """Display all copier accounts and the strategies they are copying."""
+        token = session.get('access_token')
+        if not token:
+            return redirect(url_for('index'))
+
+        # Get profile ID
+        profile_id = services.get_profile_id(token)
+        if not profile_id:
+            return "Error: Could not retrieve profile", 500
+
+        # Get all copiers for this profile
+        copiers = services.list_profile_copiers(profile_id, token)
+
+        # Build view model with nested data
+        # Use simple dict cache for strategy stats to avoid N+1
+        strategy_stats_cache = {}
+
+        copiers_data = []
+        for copier in copiers:
+            copier_id = copier.get('Id')
+            if not copier_id:
+                continue
+
+            # Build copier info
+            copier_info = {
+                'id': copier_id,
+                'name': copier.get('Name', 'Unknown'),
+                'enabled': copier.get('IsEnabled', False),
+                'server_code': copier.get('Connection', {}).get('ServerCode', 'N/A'),
+                'username': copier.get('Connection', {}).get('Username', 'N/A')
+            }
+
+            # Get copier stats (optional, continue if fails)
+            copier_stats = None
+            try:
+                stats_resp = services.get_copiers_with_stats(token)
+                if stats_resp and len(stats_resp) == 2:
+                    _, copiers_with_stats = stats_resp
+                    for c in copiers_with_stats:
+                        if c.get('id') == copier_id:
+                            copier_stats = c.get('stats', {})
+                            break
+            except Exception:
+                pass
+
+            # Get strategies being copied by this copier
+            strategies_list = services.list_copier_strategies(copier_id, token)
+
+            strategies_data = []
+            for strategy in strategies_list:
+                strategy_id = strategy.get('Id')
+                if not strategy_id:
+                    continue
+
+                # Get copy settings for this copier/strategy pair
+                copy_settings, status_code = services.get_copy_settings(copier_id, strategy_id, token)
+                if status_code != 200:
+                    copy_settings = None
+
+                # Get strategy stats (with caching)
+                stats = None
+                if strategy_id not in strategy_stats_cache:
+                    stats = services.get_strategy_stats(strategy_id, token)
+                    strategy_stats_cache[strategy_id] = stats
+                else:
+                    stats = strategy_stats_cache[strategy_id]
+
+                # Build strategy data
+                strategy_data = {
+                    'id': strategy_id,
+                    'name': strategy.get('Name', 'Unknown'),
+                    'profile_name': strategy.get('ProfileName', 'Unknown'),
+                    'fee': strategy.get('Fee', 0) * 100 if strategy.get('Fee') is not None else 0,
+                    'num_copiers': strategy.get('NumCopiers', 0)
+                }
+
+                strategies_data.append({
+                    'strategy': strategy_data,
+                    'settings': copy_settings,
+                    'stats': stats
+                })
+
+            copiers_data.append({
+                'copier': copier_info,
+                'copier_stats': copier_stats,
+                'strategies': strategies_data
+            })
+
+        response = make_response(render_template(
+            'copying.html',
+            copiers_data=copiers_data
+        ))
+        return add_no_cache_headers(response)
+
+    @app.route('/stop-copy', methods=['POST'])
+    def stop_copy():
+        """Handle stop copying form submission."""
+        token = session.get('access_token')
+        if not token:
+            return redirect(url_for('index'))
+
+        copier_id = request.form.get('copier_id')
+        strategy_id = request.form.get('strategy_id')
+        mode = request.form.get('mode', 'Mirror')
+
+        if not copier_id or not strategy_id:
+            return redirect(url_for('copying'))
+
+        # Delete copy settings
+        success, error = services.delete_copy_settings(copier_id, strategy_id, token, mode)
+
+        # Redirect back to copying page
+        # TODO: Add flash message for success/error
+        return redirect(url_for('copying'))

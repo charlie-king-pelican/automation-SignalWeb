@@ -7,6 +7,14 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
 </head>
 <body>
+    <!-- Navigation -->
+    <div class="page-nav">
+        <a href="/" class="nav-link active">Dashboard</a>
+        <a href="/accounts" class="nav-link">Accounts</a>
+        <a href="/copying" class="nav-link">Copying</a>
+        <a href="/logout" class="nav-link nav-link-logout">Logout</a>
+    </div>
+
     {% if profile_info %}
     <a href="/accounts" class="profile-info">
         <div class="profile-name">{{ profile_info.name }}</div>

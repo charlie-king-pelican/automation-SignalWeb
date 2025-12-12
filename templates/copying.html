@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Copying - Copy Trade Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+</head>
+<body class="copying-page">
+    <!-- Navigation -->
+    <div class="page-nav">
+        <a href="/" class="nav-link">Dashboard</a>
+        <a href="/accounts" class="nav-link">Accounts</a>
+        <a href="/copying" class="nav-link active">Copying</a>
+        <a href="/logout" class="nav-link nav-link-logout">Logout</a>
+    </div>
+
+    <div class="copying-container">
+        <h1 class="copying-title">Copying</h1>
+        <p class="copying-subtitle">Manage which strategies your copier accounts are following</p>
+
+        {% if not copiers_data %}
+        <div class="empty-state-card">
+            <p>No copier accounts found.</p>
+        </div>
+        {% else %}
+            {% for copier_data in copiers_data %}
+            <div class="copier-card">
+                <!-- Copier Header -->
+                <div class="copier-header">
+                    <div class="copier-info-section">
+                        <h2 class="copier-name">{{ copier_data.copier.name }}</h2>
+                        <div class="copier-details">
+                            <span class="copier-detail">{{ copier_data.copier.server_code }}</span>
+                            <span class="copier-separator">•</span>
+                            <span class="copier-detail">{{ copier_data.copier.username }}</span>
+                            <span class="copier-separator">•</span>
+                            {% if copier_data.copier.enabled %}
+                            <span class="status-badge status-enabled">Enabled</span>
+                            {% else %}
+                            <span class="status-badge status-disabled">Disabled</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if copier_data.copier_stats %}
+                    <div class="copier-stats-section">
+                        <div class="copier-stat-item">
+                            <span class="copier-stat-label">Balance</span>
+                            <span class="copier-stat-value">{{ '${:,.2f}'.format(copier_data.copier_stats.balance) }}</span>
+                        </div>
+                        <div class="copier-stat-item">
+                            <span class="copier-stat-label">Return</span>
+                            <span class="copier-stat-value {{ 'positive-pnl' if copier_data.copier_stats.return_pct >= 0 else 'negative-pnl' }}">
+                                {{ '{:+.1f}%'.format(copier_data.copier_stats.return_pct) }}
+                            </span>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Strategies Table -->
+                {% if not copier_data.strategies %}
+                <div class="no-strategies">
+                    <p>Not copying any strategies.</p>
+                </div>
+                {% else %}
+                <div class="strategies-table-wrapper">
+                    <table class="strategies-table">
+                        <thead>
+                            <tr>
+                                <th>Strategy</th>
+                                <th>Provider</th>
+                                <th>Fee</th>
+                                <th>Trade Sizing</th>
+                                <th>Copy Existing</th>
+                                <th>Round Up</th>
+                                <th class="actions-col">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for strategy_data in copier_data.strategies %}
+                            <tr>
+                                <td class="strategy-name-cell">
+                                    <div class="strategy-name">{{ strategy_data.strategy.name }}</div>
+                                    {% if strategy_data.stats and strategy_data.stats.get('CurrencyCode') %}
+                                    <div class="strategy-meta">{{ strategy_data.stats.CurrencyCode }} • {{ strategy_data.strategy.num_copiers }} copiers</div>
+                                    {% endif %}
+                                </td>
+                                <td>{{ strategy_data.strategy.profile_name }}</td>
+                                <td>
+                                    {% if strategy_data.strategy.fee == 0 %}
+                                    Free
+                                    {% else %}
+                                    {{ '%.1f%%'|format(strategy_data.strategy.fee) }}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if strategy_data.settings %}
+                                        {% set size_type = strategy_data.settings.get('TradeSizeType', 'Fixed') %}
+                                        {% if size_type == 'Fixed' %}
+                                        Fixed ({{ '%.2f'|format(strategy_data.settings.get('TradeSizeValue', 0)) }})
+                                        {% elif size_type == 'MirrorSize' %}
+                                        Mirror ({{ '%.2f'|format(strategy_data.settings.get('TradeSizeValue', 1)) }}x)
+                                        {% elif size_type == 'MirrorRiskByEquity' %}
+                                        Risk by Equity ({{ '%.2f'|format(strategy_data.settings.get('TradeSizeValue', 1)) }}x)
+                                        {% elif size_type == 'MirrorRiskByBalance' %}
+                                        Risk by Balance ({{ '%.2f'|format(strategy_data.settings.get('TradeSizeValue', 1)) }}x)
+                                        {% else %}
+                                        {{ size_type }}
+                                        {% endif %}
+                                    {% else %}
+                                    -
+                                    {% endif %}
+                                </td>
+                                <td class="center-cell">
+                                    {% if strategy_data.settings and strategy_data.settings.get('IsOpenExistingTrades') %}
+                                    <span class="check-icon">✓</span>
+                                    {% else %}
+                                    <span class="x-icon">✗</span>
+                                    {% endif %}
+                                </td>
+                                <td class="center-cell">
+                                    {% if strategy_data.settings and strategy_data.settings.get('IsRoundUpToMinimumSize') %}
+                                    <span class="check-icon">✓</span>
+                                    {% else %}
+                                    <span class="x-icon">✗</span>
+                                    {% endif %}
+                                </td>
+                                <td class="actions-cell">
+                                    <a href="/?copier_id={{ copier_data.copier.id }}" class="action-link edit-link">Edit</a>
+                                    <form method="POST" action="/stop-copy" style="display: inline;" onsubmit="return confirm('Stop copying {{ strategy_data.strategy.name }}? Positions will be mirrored.');">
+                                        <input type="hidden" name="copier_id" value="{{ copier_data.copier.id }}">
+                                        <input type="hidden" name="strategy_id" value="{{ strategy_data.strategy.id }}">
+                                        <input type="hidden" name="mode" value="Mirror">
+                                        <button type="submit" class="action-link stop-link">Stop</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+</body>
+</html>

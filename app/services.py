@@ -745,3 +745,145 @@ def update_copy_settings(copier_id, strategy_id, token, settings):
         return False, resp.text
     except Exception as e:
         return False, str(e)
+
+
+def get_profile_id(token):
+    """
+    Get the profile ID for the authenticated user.
+
+    Args:
+        token: Access token for API authentication
+
+    Returns:
+        str: Profile ID or None on error
+    """
+    headers = {
+        'Authorization': f"Bearer {token}",
+        'Content-Type': 'application/json'
+    }
+
+    try:
+        resp = requests.get(f"{IDENTITY_URL}/connect/userinfo", headers=headers)
+        if resp.status_code == 200:
+            userinfo = resp.json()
+            return userinfo.get('https://copy-trade.io/profile')
+        return None
+    except Exception:
+        return None
+
+
+def list_profile_copiers(profile_id, token):
+    """
+    List all copier accounts for a profile.
+
+    Args:
+        profile_id: Profile ID
+        token: Access token for API authentication
+
+    Returns:
+        list: List of copier dicts, or empty list on error
+    """
+    headers = {
+        'Authorization': f"Bearer {token}",
+        'Content-Type': 'application/json'
+    }
+
+    try:
+        resp = requests.get(
+            f"{API_BASE_URL}/api/profiles/{profile_id}/copiers",
+            headers=headers
+        )
+        if resp.status_code == 200:
+            return resp.json()
+        return []
+    except Exception:
+        return []
+
+
+def list_copier_strategies(copier_id, token):
+    """
+    List all strategies being copied by a copier account.
+
+    Args:
+        copier_id: Copier account ID
+        token: Access token for API authentication
+
+    Returns:
+        list: List of strategy dicts, or empty list on error
+    """
+    headers = {
+        'Authorization': f"Bearer {token}",
+        'Content-Type': 'application/json'
+    }
+
+    try:
+        resp = requests.get(
+            f"{API_BASE_URL}/api/copiers/{copier_id}/strategies",
+            headers=headers
+        )
+        if resp.status_code == 200:
+            return resp.json()
+        return []
+    except Exception:
+        return []
+
+
+def get_strategy_stats(strategy_id, token, wl=WHITE_LABEL_ID):
+    """
+    Get strategy statistics.
+
+    Args:
+        strategy_id: Strategy ID
+        token: Access token for API authentication
+        wl: White label ID (default: pepperstone)
+
+    Returns:
+        dict: Strategy stats or None on error
+    """
+    headers = {
+        'Authorization': f"Bearer {token}",
+        'Content-Type': 'application/json'
+    }
+
+    try:
+        resp = requests.get(
+            f"{API_BASE_URL}/api/strategies/{strategy_id}/stats",
+            headers=headers,
+            params={'wl': wl}
+        )
+        if resp.status_code == 200:
+            return resp.json()
+        return None
+    except Exception:
+        return None
+
+
+def delete_copy_settings(copier_id, strategy_id, token, mode='Mirror'):
+    """
+    Stop copying a strategy (DELETE copy settings).
+
+    Args:
+        copier_id: Copier account ID
+        strategy_id: Strategy account ID
+        token: Access token for API authentication
+        mode: Deletion mode - Mirror|Close|Manual (default: Mirror)
+
+    Returns:
+        tuple: (success: bool, error_message or None)
+    """
+    headers = {
+        'Authorization': f"Bearer {token}",
+        'Content-Type': 'application/json'
+    }
+
+    try:
+        resp = requests.delete(
+            f"{API_BASE_URL}/api/copiers/{copier_id}/strategies/{strategy_id}/copy-settings",
+            headers=headers,
+            params={'mode': mode}
+        )
+        if resp.status_code in [200, 204]:
+            return True, None
+        return False, resp.text
+    except Exception as e:
+        return False, str(e)

@@ -859,6 +859,295 @@ body {
     color: #2962ff;
 }
 
+/* Page Navigation */
+.page-nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    border-bottom: 1px solid #e8ecf1;
+    padding: 12px 20px;
+    display: flex;
+    gap: 20px;
+    z-index: 1000;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.nav-link {
+    color: #6c757d;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 8px 16px;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.nav-link:hover {
+    background: #f7f9fb;
+    color: #2962ff;
+}
+
+.nav-link.active {
+    background: #2962ff;
+    color: white;
+}
+
+.nav-link-logout {
+    margin-left: auto;
+    color: #c62828;
+}
+
+.nav-link-logout:hover {
+    background: #ffebee;
+    color: #c62828;
+}
+
+/* Add top padding to body when nav is present */
+body {
+    padding-top: 60px;
+}
+
+/* Copying Page Styles */
+body.copying-page {
+    background: #f4f6f8;
+    min-height: 100vh;
+}
+
+.copying-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 20px;
+}
+
+.copying-title {
+    font-size: 32px;
+    color: #1a1a1a;
+    margin: 0 0 8px 0;
+    font-weight: 700;
+}
+
+.copying-subtitle {
+    font-size: 15px;
+    color: #6c757d;
+    margin: 0 0 30px 0;
+}
+
+.empty-state-card {
+    background: white;
+    border-radius: 12px;
+    padding: 60px 20px;
+    text-align: center;
+    color: #6c757d;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.copier-card {
+    background: white;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    overflow: hidden;
+}
+
+.copier-header {
+    padding: 24px 28px;
+    border-bottom: 1px solid #e8ecf1;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.copier-info-section {
+    flex: 1;
+}
+
+.copier-name {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin: 0 0 8px 0;
+}
+
+.copier-details {
+    font-size: 13px;
+    color: #6c757d;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.copier-detail {
+    font-weight: 500;
+}
+
+.copier-separator {
+    color: #e8ecf1;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-enabled {
+    background: rgba(46, 125, 50, 0.1);
+    color: #2e7d32;
+}
+
+.status-disabled {
+    background: rgba(198, 40, 40, 0.1);
+    color: #c62828;
+}
+
+.copier-stats-section {
+    display: flex;
+    gap: 24px;
+}
+
+.copier-stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.copier-stat-label {
+    font-size: 11px;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.copier-stat-value {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1a1a1a;
+}
+
+.no-strategies {
+    padding: 40px 28px;
+    text-align: center;
+    color: #6c757d;
+    font-style: italic;
+}
+
+.strategies-table-wrapper {
+    overflow-x: auto;
+}
+
+.strategies-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.strategies-table th {
+    text-align: left;
+    padding: 14px 18px;
+    background: #f7f9fb;
+    color: #6c757d;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    font-weight: 800;
+    border-bottom: 1px solid #e8ecf1;
+}
+
+.strategies-table td {
+    padding: 16px 18px;
+    border-bottom: 1px solid #eef2f6;
+    color: #1a1a1a;
+    font-size: 14px;
+}
+
+.strategies-table tr:last-child td {
+    border-bottom: none;
+}
+
+.strategies-table tr:hover {
+    background: #f7f9fb;
+}
+
+.strategy-name-cell {
+    font-weight: 600;
+}
+
+.strategy-name {
+    color: #1a1a1a;
+    font-size: 14px;
+    margin-bottom: 4px;
+}
+
+.strategy-meta {
+    font-size: 12px;
+    color: #6c757d;
+    font-weight: 400;
+}
+
+.center-cell {
+    text-align: center;
+}
+
+.check-icon {
+    color: #2e7d32;
+    font-weight: 700;
+    font-size: 16px;
+}
+
+.x-icon {
+    color: #c62828;
+    font-weight: 700;
+    font-size: 16px;
+}
+
+.actions-col {
+    text-align: right;
+}
+
+.actions-cell {
+    text-align: right;
+}
+
+.action-link {
+    display: inline-block;
+    padding: 6px 14px;
+    margin-left: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    border-radius: 6px;
+    transition: all 0.2s;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.edit-link {
+    color: #2962ff;
+    background: rgba(41, 98, 255, 0.1);
+}
+
+.edit-link:hover {
+    background: rgba(41, 98, 255, 0.2);
+}
+
+.stop-link {
+    color: #c62828;
+    background: rgba(198, 40, 40, 0.1);
+}
+
+.stop-link:hover {
+    background: rgba(198, 40, 40, 0.2);
+}
+
 /* Strategy Warning */
 .strategy-warning {
     background: #fff3cd;
