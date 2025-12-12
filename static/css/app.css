@@ -548,6 +548,25 @@ body {
     color: #6c757d;
 }
 
+/* PnL Color Indicators */
+.positive-pnl {
+    color: #2e7d32;
+    font-weight: 600;
+}
+
+.negative-pnl {
+    color: #c62828;
+    font-weight: 600;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #7f8c8d;
+    font-style: italic;
+}
+
 /* Copy Strategy Button */
 .copy-btn {
     background-color: #2962ff;

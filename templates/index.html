@@ -179,22 +179,35 @@
                             </tr>
                         </thead>
                         <tbody id="openTradesBody">
-                            <tr>
-                                <td>EURUSD</td>
-                                <td><span class="pill buy">Buy</span></td>
-                                <td>0.10</td>
-                                <td>1.08540</td>
-                                <td class="muted">2025-12-12 12:21</td>
-                                <td>+12.34</td>
-                            </tr>
-                            <tr>
-                                <td>XAUUSD</td>
-                                <td><span class="pill sell">Sell</span></td>
-                                <td>0.05</td>
-                                <td>2043.20</td>
-                                <td class="muted">2025-12-12 10:03</td>
-                                <td>-5.12</td>
-                            </tr>
+                            {% if open_signals %}
+                                {% for signal in open_signals %}
+                                <tr>
+                                    <td>{{ signal.get('Instrument', '-') }}</td>
+                                    <td>
+                                        <span class="pill {{ 'buy' if signal.get('Direction', '').lower() == 'buy' else 'sell' }}">
+                                            {{ signal.get('Direction', '-') }}
+                                        </span>
+                                    </td>
+                                    <td>{{ '%.2f'|format(signal.get('Quantity', 0)) }}</td>
+                                    <td>{{ '%.5f'|format(signal.get('OpenPrice', 0)) }}</td>
+                                    <td class="muted">
+                                        {% set open_time = signal.get('OpenTimestamp', '') %}
+                                        {% if open_time %}
+                                            {{ open_time[:16].replace('T', ' ') }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td class="{{ 'positive-pnl' if signal.get('UnrealisedProfit', 0) >= 0 else 'negative-pnl' }}">
+                                        {{ '%+.2f'|format(signal.get('UnrealisedProfit', 0)) }}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="6" class="empty-state">No open positions.</td>
+                                </tr>
+                            {% endif %}
                         </tbody>
                     </table>
                 </div>
@@ -212,22 +225,42 @@
                             </tr>
                         </thead>
                         <tbody id="closedTradesBody">
-                            <tr>
-                                <td>GBPUSD</td>
-                                <td><span class="pill buy">Buy</span></td>
-                                <td>0.20</td>
-                                <td>1.26310</td>
-                                <td>1.26850</td>
-                                <td>+108.00</td>
-                            </tr>
-                            <tr>
-                                <td>US30</td>
-                                <td><span class="pill sell">Sell</span></td>
-                                <td>0.01</td>
-                                <td>38210</td>
-                                <td>38130</td>
-                                <td>+80.00</td>
-                            </tr>
+                            {% if closed_signals %}
+                                {% for signal in closed_signals %}
+                                <tr>
+                                    <td>{{ signal.get('Instrument', '-') }}</td>
+                                    <td>
+                                        <span class="pill {{ 'buy' if signal.get('Direction', '').lower() == 'buy' else 'sell' }}">
+                                            {{ signal.get('Direction', '-') }}
+                                        </span>
+                                    </td>
+                                    <td>{{ '%.2f'|format(signal.get('Quantity', 0)) }}</td>
+                                    <td class="muted">
+                                        {% set open_time = signal.get('OpenTimestamp', '') %}
+                                        {% if open_time %}
+                                            {{ open_time[:16].replace('T', ' ') }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td class="muted">
+                                        {% set close_time = signal.get('CloseTimestamp', '') %}
+                                        {% if close_time %}
+                                            {{ close_time[:16].replace('T', ' ') }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td class="{{ 'positive-pnl' if signal.get('RealisedProfit', 0) >= 0 else 'negative-pnl' }}">
+                                        {{ '%+.2f'|format(signal.get('RealisedProfit', 0)) }}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="6" class="empty-state">No closed trades in the last 30 days.</td>
+                                </tr>
+                            {% endif %}
                         </tbody>
                     </table>
                 </div>
