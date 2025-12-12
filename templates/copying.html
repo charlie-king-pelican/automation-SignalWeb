@@ -111,13 +111,8 @@
                                     {% endif %}
                                 </td>
                                 <td class="actions-cell">
-                                    <a href="/?copier_id={{ copier_data.copier.id }}" class="action-link edit-link">Edit</a>
-                                    <form method="POST" action="/stop-copy" style="display: inline;" onsubmit="return confirm('Stop copying {{ strategy_data.strategy.name }}? Positions will be mirrored.');">
-                                        <input type="hidden" name="copier_id" value="{{ copier_data.copier.id }}">
-                                        <input type="hidden" name="strategy_id" value="{{ strategy_data.strategy.id }}">
-                                        <input type="hidden" name="mode" value="Mirror">
-                                        <button type="submit" class="action-link stop-link">Stop</button>
-                                    </form>
+                                    <a href="/?copier_id={{ copier_data.copier.id }}&open_copy_modal=1" class="action-link edit-link">Edit</a>
+                                    <a href="/?copier_id={{ copier_data.copier.id }}&stop_strategy_id={{ strategy_data.strategy.id }}&open_stop_modal=1" class="action-link stop-link">Stop</a>
                                 </td>
                             </tr>
                             {% endfor %}

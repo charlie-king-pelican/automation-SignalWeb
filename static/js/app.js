@@ -140,8 +140,33 @@ function updateTradeSizeLabel() {
 }
 
 /**
+ * Clean URL by removing specified query parameters
+ * Uses history.replaceState to avoid page reload
+ * @param {string[]} paramsToRemove - Array of parameter names to remove
+ */
+function cleanUrlParams(paramsToRemove) {
+    const url = new URL(window.location.href);
+    let changed = false;
+
+    paramsToRemove.forEach(param => {
+        if (url.searchParams.has(param)) {
+            url.searchParams.delete(param);
+            changed = true;
+        }
+    });
+
+    if (changed) {
+        // Reconstruct URL, preserving hash
+        const hash = window.location.hash;
+        const newUrl = url.pathname + (url.searchParams.toString() ? '?' + url.searchParams.toString() : '') + hash;
+        window.history.replaceState({}, document.title, newUrl);
+    }
+}
+
+/**
  * Initialize the dashboard on page load
  * Restores saved tab selection from localStorage or URL hash
+ * Handles auto-open modal query parameters
  */
 window.addEventListener('DOMContentLoaded', () => {
     // Check if URL has #trades hash (for direct links like /?range=7d#trades)
@@ -158,4 +183,16 @@ window.addEventListener('DOMContentLoaded', () => {
     const urlParams = new URLSearchParams(window.location.search);
     const hasRangeParam = urlParams.has('range');
     showTradesTab(hasRangeParam ? 'closed' : 'open');
+
+    // Auto-open copy modal if query param is present
+    if (urlParams.get('open_copy_modal') === '1') {
+        openCopyModal();
+        cleanUrlParams(['open_copy_modal']);
+    }
+
+    // Auto-open stop modal if query param is present
+    if (urlParams.get('open_stop_modal') === '1') {
+        openStopModal();
+        cleanUrlParams(['open_stop_modal', 'stop_strategy_id']);
+    }
 });

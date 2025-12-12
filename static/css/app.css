@@ -105,7 +105,8 @@ body {
     box-shadow: 0 4px 12px rgba(245,166,35,0.3);
 }
 
-.strategy-name {
+/* Hero strategy name - scoped to hero-section */
+.hero-section .strategy-name {
     font-size: 36px;
     color: #1a1a1a;
     margin-bottom: 12px;
@@ -1133,7 +1134,8 @@ body.copying-page {
     font-weight: 600;
 }
 
-.strategy-name {
+/* Strategy name in copying page table - scoped to strategies-table */
+.strategies-table .strategy-name {
     color: #1a1a1a;
     font-size: 14px;
     margin-bottom: 4px;

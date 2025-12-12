@@ -404,6 +404,7 @@
     </div>
 
     <!-- Stop Copying Modal -->
+    {% set stop_strategy_id = request.args.get('stop_strategy_id', strategy_id) %}
     <div id="stopModal" class="modal" style="display: none;">
         <div class="modal-overlay" onclick="closeStopModal()"></div>
         <div class="modal-content">
@@ -413,7 +414,7 @@
             </div>
             <form method="POST" action="/stop-copy">
                 <input type="hidden" name="copier_id" value="{{ selected_copier_id }}">
-                <input type="hidden" name="strategy_id" value="{{ strategy_id }}">
+                <input type="hidden" name="strategy_id" value="{{ stop_strategy_id }}">
                 <input type="hidden" name="source" value="dashboard">
 
                 <div class="modal-body">
