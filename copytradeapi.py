@@ -215,6 +215,7 @@ def index():
     return_val = 0.0
     strategy_id = None
     inception_date = None
+    performance_fee = 0.0
     total_trades = 0
     min_per_month = 0
     max_per_month = 0
@@ -252,6 +253,12 @@ def index():
                 name = strategy.get('Name', 'Unknown')
                 copiers = strategy.get('NumCopiers', 0)
                 strategy_id = strategy.get('Id')
+                fee = strategy.get('Fee')
+                # Performance fee is nullable, convert to percentage if exists
+                if fee is not None:
+                    performance_fee = fee * 100  # Convert to percentage
+                else:
+                    performance_fee = 0.0
 
                 # Get detailed stats for this strategy
                 if strategy_id:
@@ -315,7 +322,8 @@ def index():
 
     # Format currency values with thousands separators
     def format_currency(value, code="USD"):
-        return f"{code} {value:,.2f}"
+        symbol = "$" if code == "USD" else code
+        return f"{symbol}{value:,.2f}"
 
     html = f'''
     <!DOCTYPE html>
@@ -388,12 +396,12 @@ def index():
             <div class="stats-container">
                 <div class="stat-box"><div class="stat-value">{return_val:,.2f}%</div><div class="stat-label">Total Return</div></div>
                 <div class="stat-box"><div class="stat-value">{copiers:,}</div><div class="stat-label">Copiers</div></div>
-                <div class="stat-box"><div class="stat-value">{win_rate:.1f}%</div><div class="stat-label">Win Rate</div></div>
+                <div class="stat-box"><div class="stat-value">{performance_fee:.1f}%</div><div class="stat-label">Performance Fee</div></div>
             </div>
 
             <!-- Trade Performance Section -->
             <div class="trades-section">
-                <div class="section-title">📊 Trade Performance</div>
+                <div class="section-title">TRADE PERFORMANCE</div>
                 <div class="trades-grid">
                     <div class="trade-stat">
                         <div class="trade-stat-value">{total_trades:,}</div>
@@ -426,7 +434,7 @@ def index():
 
             <!-- Profitability & Risk Section -->
             <div class="profitability-section">
-                <div class="section-title">💰 Profitability & Risk</div>
+                <div class="section-title">PROFITABILITY & RISK</div>
                 <div class="profit-grid">
                     <div class="profit-stat">
                         <div class="profit-stat-value">{format_currency(realised_pnl, currency_code)}</div>
@@ -445,7 +453,7 @@ def index():
 
             <!-- Account Status Section -->
             <div class="account-section">
-                <div class="section-title">💳 Account Status</div>
+                <div class="section-title">ACCOUNT STATUS</div>
                 <div class="account-grid">
                     <div class="account-stat">
                         <div class="account-stat-value">{format_currency(balance, currency_code)}</div>
@@ -460,7 +468,7 @@ def index():
 
             <!-- Copiers Performance Section -->
             <div class="copiers-section">
-                <div class="section-title">👥 Copiers Performance</div>
+                <div class="section-title">COPIERS PERFORMANCE</div>
                 <div class="copiers-grid">
                     <div class="copier-stat">
                         <div class="copier-stat-value">{format_currency(copiers_year_profit, currency_code)}</div>
