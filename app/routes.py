@@ -371,13 +371,27 @@ def register_routes(app):
         copier_id = request.form.get('copier_id')
         strategy_id = request.form.get('strategy_id')
         mode = request.form.get('mode', 'Mirror')
+        source = request.form.get('source', 'copying')  # 'copying' or 'dashboard'
 
+        # Validation
         if not copier_id or not strategy_id:
+            if source == 'dashboard':
+                return redirect(url_for('index', copier_id=copier_id, stop_error=1))
             return redirect(url_for('copying'))
 
-        # Delete copy settings
-        success, error = services.delete_copy_settings(copier_id, strategy_id, token, mode)
+        # Validate mode
+        if mode not in ['Mirror', 'Close', 'Manual']:
+            mode = 'Mirror'
 
-        # Redirect back to copying page
-        # TODO: Add flash message for success/error
-        return redirect(url_for('copying'))
+        # Delete copy settings
+        success, status_code, error = services.delete_copy_settings(copier_id, strategy_id, token, mode)
+
+        # Redirect based on source
+        if source == 'dashboard':
+            if success:
+                return redirect(url_for('index', copier_id=copier_id, stop_success=1))
+            else:
+                return redirect(url_for('index', copier_id=copier_id, stop_error=1))
+        else:
+            # Redirect back to copying page
+            return redirect(url_for('copying'))

@@ -328,11 +328,18 @@
                 </div>
             </div>
 
-            <!-- Copy Strategy Button -->
+            <!-- Copy Strategy Buttons -->
             {% if selected_copier_id and strategy_id %}
-                <button class="copy-btn" type="button" onclick="openCopyModal()">
-                    {% if is_copying %}Edit Copy{% else %}Copy Strategy{% endif %}
-                </button>
+                <div class="copy-buttons">
+                    <button class="copy-btn" type="button" onclick="openCopyModal()">
+                        {% if is_copying %}Edit Copy{% else %}Copy Strategy{% endif %}
+                    </button>
+                    {% if is_copying %}
+                    <button class="stop-copy-btn" type="button" onclick="openStopModal()">
+                        Stop Copying
+                    </button>
+                    {% endif %}
+                </div>
             {% endif %}
 
             <p style="font-size: 10px; color: #95a5a6; margin-top: 20px;">
@@ -401,6 +408,60 @@
                 <div class="modal-footer">
                     <button type="button" class="btn-secondary" onclick="closeCopyModal()">Cancel</button>
                     <button type="submit" class="btn-primary">{% if is_copying %}Update{% else %}Start Copying{% endif %}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Stop Copying Modal -->
+    <div id="stopModal" class="modal" style="display: none;">
+        <div class="modal-overlay" onclick="closeStopModal()"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Stop Copying {{ strategy.name if strategy else 'Strategy' }}?</h2>
+                <button class="modal-close" type="button" onclick="closeStopModal()">&times;</button>
+            </div>
+            <form method="POST" action="/stop-copy">
+                <input type="hidden" name="copier_id" value="{{ selected_copier_id }}">
+                <input type="hidden" name="strategy_id" value="{{ strategy_id }}">
+                <input type="hidden" name="source" value="dashboard">
+
+                <div class="modal-body">
+                    <p style="margin-bottom: 20px; color: #6c757d; font-size: 14px;">
+                        Choose how to handle your existing positions:
+                    </p>
+
+                    <!-- Mode Selection -->
+                    <div class="form-group">
+                        <label class="radio-option">
+                            <input type="radio" name="mode" value="Mirror" checked>
+                            <div class="radio-content">
+                                <div class="radio-label">Mirror (Recommended)</div>
+                                <div class="radio-description">Stop copying but let existing positions close when the strategy closes them. This mirrors the strategy's exit timing.</div>
+                            </div>
+                        </label>
+
+                        <label class="radio-option">
+                            <input type="radio" name="mode" value="Close">
+                            <div class="radio-content">
+                                <div class="radio-label">Close Immediately</div>
+                                <div class="radio-description">Stop copying and close all positions now at market price. May result in slippage.</div>
+                            </div>
+                        </label>
+
+                        <label class="radio-option">
+                            <input type="radio" name="mode" value="Manual">
+                            <div class="radio-content">
+                                <div class="radio-label">Manual</div>
+                                <div class="radio-description">Stop copying and leave positions open for you to manage manually.</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="closeStopModal()">Cancel</button>
+                    <button type="submit" class="btn-danger">Confirm Stop</button>
                 </div>
             </form>
         </div>

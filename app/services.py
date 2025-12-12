@@ -869,7 +869,7 @@ def delete_copy_settings(copier_id, strategy_id, token, mode='Mirror'):
         mode: Deletion mode - Mirror|Close|Manual (default: Mirror)
 
     Returns:
-        tuple: (success: bool, error_message or None)
+        tuple: (success: bool, status_code: int, error_message: str or None)
     """
     headers = {
         'Authorization': f"Bearer {token}",
@@ -883,7 +883,7 @@ def delete_copy_settings(copier_id, strategy_id, token, mode='Mirror'):
             params={'mode': mode}
         )
         if resp.status_code in [200, 204]:
-            return True, None
-        return False, resp.text
+            return True, resp.status_code, None
+        return False, resp.status_code, resp.text
     except Exception as e:
-        return False, str(e)
+        return False, 0, str(e)

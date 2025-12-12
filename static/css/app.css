@@ -859,6 +859,100 @@ body {
     color: #2962ff;
 }
 
+.btn-danger {
+    background: #d32f2f;
+    color: white;
+    border: none;
+    padding: 12px 28px;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-danger:hover {
+    background: #c62828;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(198, 40, 40, 0.4);
+}
+
+/* Copy Buttons Group */
+.copy-buttons {
+    display: flex;
+    gap: 12px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+
+.stop-copy-btn {
+    background-color: #d32f2f;
+    color: white;
+    border: none;
+    padding: 14px 32px;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 4px 15px rgba(211, 47, 47, 0.3);
+}
+
+.stop-copy-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(198, 40, 40, 0.4);
+    background-color: #c62828;
+}
+
+/* Radio Option Styles */
+.radio-option {
+    display: block;
+    padding: 16px;
+    margin-bottom: 12px;
+    border: 2px solid #e8ecf1;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: white;
+}
+
+.radio-option:hover {
+    border-color: #2962ff;
+    background: #f7f9fb;
+}
+
+.radio-option input[type="radio"] {
+    margin-right: 12px;
+    cursor: pointer;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+.radio-option input[type="radio"]:checked + .radio-content .radio-label {
+    color: #2962ff;
+}
+
+.radio-content {
+    display: inline-block;
+    vertical-align: top;
+    width: calc(100% - 30px);
+}
+
+.radio-label {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 4px;
+    display: block;
+}
+
+.radio-description {
+    font-size: 13px;
+    color: #6c757d;
+    line-height: 1.5;
+}
+
 /* Page Navigation */
 .page-nav {
     position: fixed;

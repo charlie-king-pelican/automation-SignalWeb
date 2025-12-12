@@ -101,6 +101,28 @@ function closeCopyModal() {
 }
 
 /**
+ * Open the stop copying modal
+ */
+function openStopModal() {
+    const modal = document.getElementById('stopModal');
+    if (modal) {
+        modal.style.display = 'block';
+        document.body.style.overflow = 'hidden'; // Prevent background scrolling
+    }
+}
+
+/**
+ * Close the stop copying modal
+ */
+function closeStopModal() {
+    const modal = document.getElementById('stopModal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = ''; // Restore scrolling
+    }
+}
+
+/**
  * Update the trade size label based on selected trade size type
  */
 function updateTradeSizeLabel() {
