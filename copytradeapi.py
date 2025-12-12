@@ -508,6 +508,22 @@ def index():
             /* Button */
             .copy-btn {{ background-color: #2962ff; color: white; border: none; padding: 14px 40px; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 10px; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 4px 15px rgba(41, 98, 255, 0.3); }}
             .copy-btn:hover {{ transform: translateY(-2px); box-shadow: 0 6px 20px rgba(41, 98, 255, 0.4); }}
+
+            /* Trades Tabs + Table */
+            .trades-tabs {{ display: flex; gap: 10px; margin: 10px 0 18px; }}
+            .tab-btn {{ border: 2px solid #e8ecf1; background: #fff; color: #1a1a1a; padding: 10px 14px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s; }}
+            .tab-btn:hover {{ border-color: #2962ff; box-shadow: 0 4px 12px rgba(41,98,255,0.1); }}
+            .tab-btn.active {{ background: #2962ff; color: #fff; border-color: #2962ff; }}
+            .trades-panel {{ display: none; background: #fff; border: 1px solid #e8ecf1; border-radius: 12px; overflow: hidden; box-shadow: 0 6px 18px rgba(0,0,0,0.06); }}
+            .trades-panel.active {{ display: block; }}
+            .trades-table {{ width: 100%; border-collapse: collapse; font-size: 12px; }}
+            .trades-table th {{ text-align: left; padding: 12px 14px; background: #f7f9fb; color: #6c757d; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 800; border-bottom: 1px solid #e8ecf1; }}
+            .trades-table td {{ padding: 12px 14px; border-bottom: 1px solid #eef2f6; color: #1a1a1a; }}
+            .trades-table tr:last-child td {{ border-bottom: none; }}
+            .pill {{ display: inline-block; padding: 4px 10px; border-radius: 999px; font-weight: 800; font-size: 11px; border: 1px solid rgba(0,0,0,0.08); }}
+            .pill.buy {{ background: rgba(56,239,125,0.18); color: #0f5132; border-color: rgba(15,81,50,0.2); }}
+            .pill.sell {{ background: rgba(255,107,107,0.18); color: #842029; border-color: rgba(132,32,41,0.2); }}
+            .muted {{ color: #6c757d; }}
         </style>
     </head>
     <body>
@@ -564,6 +580,79 @@ def index():
                         <div class="trade-stat-label">Win Rate</div>
                     </div>
                 </div>
+            </div>
+
+            <!-- Trades Section (Open / Closed) -->
+            <div class="section-title" style="margin-top: 10px;">TRADES</div>
+            <div class="trades-tabs">
+                <button id="tabOpen" class="tab-btn active" type="button" onclick="showTradesTab('open')">Open</button>
+                <button id="tabClosed" class="tab-btn" type="button" onclick="showTradesTab('closed')">Closed</button>
+            </div>
+
+            <div id="panelOpen" class="trades-panel active">
+                <table class="trades-table">
+                    <thead>
+                        <tr>
+                            <th>Symbol</th>
+                            <th>Side</th>
+                            <th>Lots</th>
+                            <th>Open Price</th>
+                            <th class="muted">Open Time</th>
+                            <th>PnL</th>
+                        </tr>
+                    </thead>
+                    <tbody id="openTradesBody">
+                        <tr>
+                            <td>EURUSD</td>
+                            <td><span class="pill buy">Buy</span></td>
+                            <td>0.10</td>
+                            <td>1.08540</td>
+                            <td class="muted">2025-12-12 12:21</td>
+                            <td>+12.34</td>
+                        </tr>
+                        <tr>
+                            <td>XAUUSD</td>
+                            <td><span class="pill sell">Sell</span></td>
+                            <td>0.05</td>
+                            <td>2043.20</td>
+                            <td class="muted">2025-12-12 10:03</td>
+                            <td>-5.12</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="panelClosed" class="trades-panel">
+                <table class="trades-table">
+                    <thead>
+                        <tr>
+                            <th>Symbol</th>
+                            <th>Side</th>
+                            <th>Lots</th>
+                            <th>Open</th>
+                            <th>Close</th>
+                            <th>PnL</th>
+                        </tr>
+                    </thead>
+                    <tbody id="closedTradesBody">
+                        <tr>
+                            <td>GBPUSD</td>
+                            <td><span class="pill buy">Buy</span></td>
+                            <td>0.20</td>
+                            <td>1.26310</td>
+                            <td>1.26850</td>
+                            <td>+108.00</td>
+                        </tr>
+                        <tr>
+                            <td>US30</td>
+                            <td><span class="pill sell">Sell</span></td>
+                            <td>0.01</td>
+                            <td>38210</td>
+                            <td>38130</td>
+                            <td>+80.00</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
 
             <!-- Profitability & Risk Section -->
@@ -673,6 +762,9 @@ def index():
                         break;
                     }}
                 }}
+
+                // Default trades tab
+                showTradesTab('open');
             }});
 
             function getSelectedAccountId() {{
@@ -681,6 +773,25 @@ def index():
 
             function getSelectedAccountType() {{
                 return localStorage.getItem('selectedAccountType');
+            }}
+
+            function showTradesTab(which) {{
+                const tabOpen = document.getElementById('tabOpen');
+                const tabClosed = document.getElementById('tabClosed');
+                const panelOpen = document.getElementById('panelOpen');
+                const panelClosed = document.getElementById('panelClosed');
+
+                if (which === 'closed') {{
+                    if (tabClosed) tabClosed.classList.add('active');
+                    if (tabOpen) tabOpen.classList.remove('active');
+                    if (panelClosed) panelClosed.classList.add('active');
+                    if (panelOpen) panelOpen.classList.remove('active');
+                }} else {{
+                    if (tabOpen) tabOpen.classList.add('active');
+                    if (tabClosed) tabClosed.classList.remove('active');
+                    if (panelOpen) panelOpen.classList.add('active');
+                    if (panelClosed) panelClosed.classList.remove('active');
+                }}
             }}
         </script>
     </body>
