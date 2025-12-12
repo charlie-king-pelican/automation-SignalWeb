@@ -737,108 +737,75 @@ def index():
             </div> <!-- End content-sections -->
         </div> <!-- End card -->
 
-        <script>
-            function handleAccountChange() {{
-                const selector = document.getElementById('accountSelector');
-                if (!selector) return;
-
-                const selectedOption = selector.options[selector.selectedIndex];
-                const selectedAccountId = selector.value;
-                const accountType = selectedOption ? selectedOption.getAttribute('data-type') : null;
-
-                const copyBtns = document.querySelectorAll('.copy-btn');
-
-                if (selectedAccountId) {{
-                    localStorage.setItem('selectedAccountId', selectedAccountId);
-                    if (accountType) localStorage.setItem('selectedAccountType', accountType);
-
-                    copyBtns.forEach(btn => btn.classList.remove('hidden'));
-                }} else {{
-                    localStorage.removeItem('selectedAccountId');
-                    localStorage.removeItem('selectedAccountType');
-
-                    copyBtns.forEach(btn => btn.classList.add('hidden'));
-                }}
-            }}
-
-            window.addEventListener('DOMContentLoaded', function() {{
-                const selector = document.getElementById('accountSelector');
-                if (!selector) return;
-
-                const savedAccountId = localStorage.getItem('selectedAccountId');
-                if (savedAccountId) {{
-                    selector.value = savedAccountId;
-                    handleAccountChange();
-                    // Continue to page tab logic
-                }} else {{
-                    // Auto-select first non-disabled option (first real account)
-                    for (let i = 0; i < selector.options.length; i++) {{
-                        const option = selector.options[i];
-                        if (!option.disabled && option.value) {{
-                            selector.value = option.value;
-                            handleAccountChange();
-                            break;
-                        }}
-                    }}
-                }}
-
-                const savedPageTab = localStorage.getItem('selectedPageTab') || 'overview';
-                showPageTab(savedPageTab);
-
-                // Default trades tab
-                showTradesTab('open');
-            }});
-            function showPageTab(which) {{
-                const btnOverview = document.getElementById('pageTabOverview');
-                const btnTrades = document.getElementById('pageTabTrades');
-                const overview = document.getElementById('overviewSection');
-                const trades = document.getElementById('tradesSection');
-
-                if (which === 'trades') {{
-                    if (btnTrades) btnTrades.classList.add('active');
-                    if (btnOverview) btnOverview.classList.remove('active');
-                    if (trades) trades.classList.add('active');
-                    if (overview) overview.classList.remove('active');
-                    localStorage.setItem('selectedPageTab', 'trades');
-                }} else {{
-                    if (btnOverview) btnOverview.classList.add('active');
-                    if (btnTrades) btnTrades.classList.remove('active');
-                    if (overview) overview.classList.add('active');
-                    if (trades) trades.classList.remove('active');
-                    localStorage.setItem('selectedPageTab', 'overview');
-                }}
-            }
-
-            function getSelectedAccountId() {{
-                return localStorage.getItem('selectedAccountId');
-            }}
-
-            function getSelectedAccountType() {{
-                return localStorage.getItem('selectedAccountType');
-            }}
-
-            function showTradesTab(which) {{
-                const tabOpen = document.getElementById('tabOpen');
-                const tabClosed = document.getElementById('tabClosed');
-                const panelOpen = document.getElementById('panelOpen');
-                const panelClosed = document.getElementById('panelClosed');
-
-                if (which === 'closed') {{
-                    if (tabClosed) tabClosed.classList.add('active');
-                    if (tabOpen) tabOpen.classList.remove('active');
-                    if (panelClosed) panelClosed.classList.add('active');
-                    if (panelOpen) panelOpen.classList.remove('active');
-                }} else {{
-                    if (tabOpen) tabOpen.classList.add('active');
-                    if (tabClosed) tabClosed.classList.remove('active');
-                    if (panelOpen) panelOpen.classList.add('active');
-                    if (panelClosed) panelClosed.classList.remove('active');
-                }}
-            }}
-        </script>
+        <!-- SCRIPT_INJECT -->
     </body>
     </html>
     '''
+    html += """
+    <script>
+      function handleAccountChange() {
+        const selector = document.getElementById('accountSelector');
+        if (!selector) return;
+        const selectedOption = selector.options[selector.selectedIndex];
+        const selectedAccountId = selector.value;
+        const accountType = selectedOption ? selectedOption.getAttribute('data-type') : null;
+        const copyBtns = document.querySelectorAll('.copy-btn');
+        if (selectedAccountId) {
+          localStorage.setItem('selectedAccountId', selectedAccountId);
+          if (accountType) localStorage.setItem('selectedAccountType', accountType);
+          copyBtns.forEach(btn => btn.classList.remove('hidden'));
+        } else {
+          localStorage.removeItem('selectedAccountId');
+          localStorage.removeItem('selectedAccountType');
+          copyBtns.forEach(btn => btn.classList.add('hidden'));
+        }
+      }
+
+      function showPageTab(which) {
+        const btnOverview = document.getElementById('pageTabOverview');
+        const btnTrades = document.getElementById('pageTabTrades');
+        const overview = document.getElementById('overviewSection');
+        const trades = document.getElementById('tradesSection');
+        if (which === 'trades') {
+          btnTrades?.classList.add('active');
+          btnOverview?.classList.remove('active');
+          trades?.classList.add('active');
+          overview?.classList.remove('active');
+          localStorage.setItem('selectedPageTab', 'trades');
+        } else {
+          btnOverview?.classList.add('active');
+          btnTrades?.classList.remove('active');
+          overview?.classList.add('active');
+          trades?.classList.remove('active');
+          localStorage.setItem('selectedPageTab', 'overview');
+        }
+      }
+
+      function showTradesTab(which) {
+        const tabOpen = document.getElementById('tabOpen');
+        const tabClosed = document.getElementById('tabClosed');
+        const panelOpen = document.getElementById('panelOpen');
+        const panelClosed = document.getElementById('panelClosed');
+        if (which === 'closed') {
+          tabClosed?.classList.add('active');
+          tabOpen?.classList.remove('active');
+          panelClosed?.classList.add('active');
+          panelOpen?.classList.remove('active');
+        } else {
+          tabOpen?.classList.add('active');
+          tabClosed?.classList.remove('active');
+          panelOpen?.classList.add('active');
+          panelClosed?.classList.remove('active');
+        }
+      }
+
+      window.addEventListener('DOMContentLoaded', () => {
+        const savedPageTab = localStorage.getItem('selectedPageTab') || 'overview';
+        showPageTab(savedPageTab);
+        showTradesTab('open');
+      });
+    </script>
+    """
     response = make_response(html)
     return add_no_cache_headers(response)
 
