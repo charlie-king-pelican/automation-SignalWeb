@@ -142,17 +142,18 @@
             <a href="/" class="back-link">← Back to Dashboard</a>
         </div>
 
-        {% if not copier_id %}
+        {% if not strategy_id %}
         <div class="no-copier-message">
-            <h2>⚠️ No Copier Selected</h2>
-            <p>Please go to the dashboard and select an account from the dropdown.</p>
+            <h2>⚠️ No Strategy Selected</h2>
+            <p>Please go to the dashboard and click the debug link to view strategy signals.</p>
             <a href="/">Go to Dashboard</a>
         </div>
         {% else %}
         <div class="info-box">
-            <strong>Copier ID:</strong> {{ copier_id }}<br>
+            <strong>Strategy ID:</strong> {{ strategy_id }}<br>
+            <strong>Type:</strong> Hero Strategy (Top Performer)<br>
             <strong>Date Range:</strong> Last 30 days (UTC)<br>
-            <strong>Note:</strong> This shows raw API responses for inspection before building the trades table UI.
+            <strong>Note:</strong> This shows raw API responses for the strategy's trades before building the UI table.
         </div>
 
         {% if error_message %}
@@ -162,32 +163,16 @@
         {% endif %}
 
         <div class="signal-section">
-            <h2>📊 Open Signals (Current Positions)</h2>
+            <h2>📊 Open Strategy Signals (Current Positions)</h2>
             <pre>{{ open_signals|tojson(indent=2) }}</pre>
         </div>
 
         <div class="signal-section">
-            <h2>📈 Closed Signals (Last 30 Days)</h2>
+            <h2>📈 Closed Strategy Signals (Last 30 Days)</h2>
             <pre>{{ closed_signals|tojson(indent=2) }}</pre>
         </div>
         {% endif %}
     </div>
 
-    <script>
-        // Auto-redirect to include copier_id from localStorage if not in URL
-        (function() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const copierIdInUrl = urlParams.get('copier_id');
-
-            // Only redirect if copier_id is not already in URL
-            if (!copierIdInUrl) {
-                const selectedCopierId = localStorage.getItem('selectedAccountId');
-                if (selectedCopierId) {
-                    // Redirect with copier_id parameter
-                    window.location.href = '/debug/api?copier_id=' + selectedCopierId;
-                }
-            }
-        })();
-    </script>
 </body>
 </html>

@@ -524,3 +524,66 @@ def get_closed_signals(copier_id, token, start_dt_iso, end_dt_iso):
         return []
     except Exception:
         return []
+
+
+def get_strategy_open_signals(strategy_id, token):
+    """
+    Get open signals (positions) for a specific strategy account.
+
+    Args:
+        strategy_id: Strategy account ID
+        token: Access token for API authentication
+
+    Returns:
+        list: List of open signal dicts, or empty list on error
+    """
+    headers = {
+        'Authorization': f"Bearer {token}",
+        'Content-Type': 'application/json'
+    }
+
+    try:
+        resp = requests.get(
+            f"{API_BASE_URL}/api/strategies/{strategy_id}/signals/open",
+            headers=headers
+        )
+        if resp.status_code == 200:
+            return resp.json()
+        return []
+    except Exception:
+        return []
+
+
+def get_strategy_closed_signals(strategy_id, token, start_dt_iso, end_dt_iso):
+    """
+    Get closed signals (historical trades) for a specific strategy account.
+
+    Args:
+        strategy_id: Strategy account ID
+        token: Access token for API authentication
+        start_dt_iso: Start date-time in ISO 8601 format
+        end_dt_iso: End date-time in ISO 8601 format
+
+    Returns:
+        list: List of closed signal dicts, or empty list on error
+    """
+    headers = {
+        'Authorization': f"Bearer {token}",
+        'Content-Type': 'application/json'
+    }
+
+    try:
+        params = {
+            'startDate': start_dt_iso,
+            'endDate': end_dt_iso
+        }
+        resp = requests.get(
+            f"{API_BASE_URL}/api/strategies/{strategy_id}/signals/closed",
+            headers=headers,
+            params=params
+        )
+        if resp.status_code == 200:
+            return resp.json()
+        return []
+    except Exception:
+        return []

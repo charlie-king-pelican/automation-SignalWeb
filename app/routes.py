@@ -80,6 +80,7 @@ def register_routes(app):
             profile_info=profile_info,
             accounts_list=accounts_list,
             strategy=strategy_data,
+            strategy_id=strategy_data.get('strategy_id'),
             inception_display=inception_display,
             fee_display=fee_display,
             format_currency=services.format_currency
@@ -119,18 +120,18 @@ def register_routes(app):
 
     @app.route('/debug/api')
     def debug_api():
-        """Debug route - display raw JSON for open and closed signals."""
+        """Debug route - display raw JSON for strategy open and closed signals."""
         token = session.get('access_token')
         if not token:
             return redirect(url_for('index'))
 
-        copier_id = request.args.get('copier_id')
+        strategy_id = request.args.get('strategy_id')
 
         open_signals = None
         closed_signals = None
         error_message = None
 
-        if copier_id:
+        if strategy_id:
             try:
                 # Calculate date range for closed signals (last 30 days)
                 from datetime import datetime, timedelta
@@ -141,14 +142,14 @@ def register_routes(app):
                 start_dt_iso = start_dt.strftime('%Y-%m-%dT%H:%M:%SZ')
                 end_dt_iso = end_dt.strftime('%Y-%m-%dT%H:%M:%SZ')
 
-                # Fetch signals
-                open_signals = services.get_open_signals(copier_id, token)
-                closed_signals = services.get_closed_signals(copier_id, token, start_dt_iso, end_dt_iso)
+                # Fetch strategy signals
+                open_signals = services.get_strategy_open_signals(strategy_id, token)
+                closed_signals = services.get_strategy_closed_signals(strategy_id, token, start_dt_iso, end_dt_iso)
             except Exception as e:
                 error_message = f"Error fetching signals: {str(e)}"
 
         return render_template('debug.html',
-                             copier_id=copier_id,
+                             strategy_id=strategy_id,
                              open_signals=open_signals,
                              closed_signals=closed_signals,
                              error_message=error_message)
