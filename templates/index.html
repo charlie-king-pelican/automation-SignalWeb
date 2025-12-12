@@ -202,13 +202,13 @@
                     </div>
                     <div class="closed-stat-card">
                         <div class="closed-stat-value">
-                            {% if closed_trades_stats.profit_factor is not none %}
-                                {{ '%.2f'|format(closed_trades_stats.profit_factor) }}
+                            {% if closed_trades_stats.most_common_symbol %}
+                                {{ closed_trades_stats.most_common_symbol }}
                             {% else %}
                                 -
                             {% endif %}
                         </div>
-                        <div class="closed-stat-label">Profit Factor</div>
+                        <div class="closed-stat-label">Most Traded</div>
                     </div>
                     <div class="closed-stat-card">
                         <div class="closed-stat-value positive-pnl">{{ format_currency(closed_trades_stats.biggest_win, strategy.currency_code) }}</div>
@@ -226,7 +226,7 @@
                         <thead>
                             <tr>
                                 <th>Symbol</th>
-                                <th>Side</th>
+                                <th>Direction</th>
                                 <th>Lots</th>
                                 <th>Open Price</th>
                                 <th class="muted">Open Time</th>
@@ -272,7 +272,7 @@
                         <thead>
                             <tr>
                                 <th>Symbol</th>
-                                <th>Side</th>
+                                <th>Direction</th>
                                 <th>Lots</th>
                                 <th>Open</th>
                                 <th>Close</th>

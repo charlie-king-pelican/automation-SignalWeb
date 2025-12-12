@@ -431,12 +431,12 @@ def compute_closed_trades_stats(closed_signals):
     Compute summary statistics for closed trades.
 
     Args:
-        closed_signals: List of closed signal dicts with RealisedProfit field
+        closed_signals: List of closed signal dicts with RealisedProfit and Instrument fields
 
     Returns:
         dict: Statistics including trades_count, wins_count, losses_count,
               win_rate_pct, total_realised_pnl, avg_realised_pnl,
-              profit_factor, biggest_win, biggest_loss
+              most_common_symbol, biggest_win, biggest_loss
     """
     if not closed_signals:
         return {
@@ -446,7 +446,7 @@ def compute_closed_trades_stats(closed_signals):
             'win_rate_pct': 0.0,
             'total_realised_pnl': 0.0,
             'avg_realised_pnl': 0.0,
-            'profit_factor': None,
+            'most_common_symbol': None,
             'biggest_win': 0.0,
             'biggest_loss': 0.0
         }
@@ -464,10 +464,13 @@ def compute_closed_trades_stats(closed_signals):
     total_realised_pnl = sum(pnl_values)
     avg_realised_pnl = total_realised_pnl / trades_count if trades_count > 0 else 0.0
 
-    # Profit factor: sum of wins / abs(sum of losses)
-    sum_wins = sum(wins) if wins else 0.0
-    sum_losses = abs(sum(losses)) if losses else 0.0
-    profit_factor = (sum_wins / sum_losses) if sum_losses > 0 else None
+    # Find most common symbol
+    symbols = [signal.get('Instrument', '') for signal in closed_signals if signal.get('Instrument')]
+    most_common_symbol = None
+    if symbols:
+        from collections import Counter
+        symbol_counts = Counter(symbols)
+        most_common_symbol = symbol_counts.most_common(1)[0][0]
 
     biggest_win = max(pnl_values) if pnl_values else 0.0
     biggest_loss = min(pnl_values) if pnl_values else 0.0
@@ -479,7 +482,7 @@ def compute_closed_trades_stats(closed_signals):
         'win_rate_pct': win_rate_pct,
         'total_realised_pnl': total_realised_pnl,
         'avg_realised_pnl': avg_realised_pnl,
-        'profit_factor': profit_factor,
+        'most_common_symbol': most_common_symbol,
         'biggest_win': biggest_win,
         'biggest_loss': biggest_loss
     }
