@@ -707,134 +707,62 @@ def login():
 
 @app.route('/debug/api')
 def debug_api():
-    """Streamlined debug route focused on strategy data and fees"""
+    """Debug route - cleared for production"""
     token = session.get('access_token')
     if not token:
-        return """
-        <html>
-        <body style="font-family: monospace; padding: 20px;">
-            <h2>❌ Not Logged In</h2>
-            <p>Please <a href="/">go to homepage</a> and log in first.</p>
-        </body>
-        </html>
-        """
+        return redirect(url_for('index'))
 
-    headers = {
-        'Authorization': f"Bearer {token}",
-        'Content-Type': 'application/json'
-    }
-
-    results = {}
-
-    # Get discover/spotlight data with detailed fee information
-    try:
-        resp = requests.get(f"{API_BASE_URL}/api/discover/Strategies",
-                          headers=headers,
-                          params={'wl': WHITE_LABEL_ID})
-        if resp.status_code == 200:
-            discover_data = resp.json()
-
-            if discover_data and len(discover_data) > 0:
-                # Get the spotlight strategy (first one)
-                spotlight_item = discover_data[0]
-                spotlight_strategy = spotlight_item.get('Strategy', {})
-                spotlight_id = spotlight_strategy.get('Id')
-
-                # Extract ALL fields from the strategy object for debugging
-                results['1_spotlight_strategy_raw'] = {
-                    'status': 200,
-                    'strategy_id': spotlight_id,
-                    'full_strategy_object': spotlight_strategy,
-                    'full_discover_item': spotlight_item
-                }
-
-                # Specifically check Fee field (with different case variations)
-                fee_debug = {
-                    'Fee_field': spotlight_strategy.get('Fee'),
-                    'fee_field_lowercase': spotlight_strategy.get('fee'),
-                    'Fee_type': type(spotlight_strategy.get('Fee')).__name__,
-                    'Fee_is_none': spotlight_strategy.get('Fee') is None,
-                    'Fee_value_raw': repr(spotlight_strategy.get('Fee')),
-                    'all_strategy_keys': list(spotlight_strategy.keys())
-                }
-                results['2_fee_debugging'] = fee_debug
-
-                # Get detailed strategy info
-                if spotlight_id:
-                    try:
-                        resp = requests.get(f"{API_BASE_URL}/api/strategies/{spotlight_id}",
-                                          headers=headers)
-                        if resp.status_code == 200:
-                            strategy_detail = resp.json()
-                            results['3_strategy_detail'] = {
-                                'status': 200,
-                                'data': strategy_detail,
-                                'fee_from_detail': strategy_detail.get('Fee'),
-                                'fee_from_detail_type': type(strategy_detail.get('Fee')).__name__
-                            }
-                    except Exception as e:
-                        results['3_strategy_detail'] = {'error': str(e)}
-
-                    # Get stats
-                    try:
-                        resp = requests.get(f"{API_BASE_URL}/api/strategies/{spotlight_id}/stats",
-                                          headers=headers,
-                                          params={'wl': WHITE_LABEL_ID})
-                        if resp.status_code == 200:
-                            results['4_strategy_stats'] = {
-                                'status': 200,
-                                'strategy_id': spotlight_id,
-                                'data': resp.json()
-                            }
-                    except Exception as e:
-                        results['4_strategy_stats'] = {'error': str(e)}
-
-                    # Test strategy image endpoints
-                    try:
-                        image_urls_tested = {}
-                        test_urls = [
-                            f"{API_BASE_URL}/api/strategies/{spotlight_id}/image",
-                            f"https://cdn.copy-trade.io/strategies/{spotlight_id}.jpg",
-                            f"https://cdn.copy-trade.io/strategies/{spotlight_id}/image.jpg",
-                        ]
-                        for url in test_urls:
-                            try:
-                                resp = requests.head(url, headers=headers, timeout=2)
-                                image_urls_tested[url] = resp.status_code
-                            except:
-                                image_urls_tested[url] = 'timeout/error'
-                        results['5_image_url_tests'] = {
-                            'tested_urls': image_urls_tested,
-                            'imageUploaded_timestamp': spotlight_strategy.get('ImageUploaded')
-                        }
-                    except Exception as e:
-                        results['5_image_url_tests'] = {'error': str(e)}
-        else:
-            results['1_spotlight_strategy_raw'] = {'status': resp.status_code, 'error': resp.text}
-    except Exception as e:
-        results['error'] = str(e)
-
-    return f"""
+    return """
     <html>
     <head>
         <style>
-            body {{ font-family: monospace; padding: 20px; background: #f5f5f5; }}
-            pre {{ background: white; padding: 20px; border-radius: 5px; overflow-x: auto; font-size: 12px; line-height: 1.6; }}
-            h2 {{ color: #2962ff; }}
-            .highlight {{ background: #fff3cd; padding: 2px 5px; border-radius: 3px; }}
-            .section {{ margin-bottom: 20px; }}
-            a {{ color: #2962ff; text-decoration: none; font-weight: bold; }}
-            a:hover {{ text-decoration: underline; }}
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                padding: 40px;
+                background: #f5f5f5;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+                margin: 0;
+            }
+            .container {
+                background: white;
+                padding: 40px;
+                border-radius: 12px;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+                text-align: center;
+                max-width: 500px;
+            }
+            h2 {
+                color: #333;
+                margin-bottom: 10px;
+            }
+            p {
+                color: #7f8c8d;
+                margin-bottom: 30px;
+            }
+            a {
+                color: #2962ff;
+                text-decoration: none;
+                font-weight: 600;
+                padding: 12px 30px;
+                background: #f0f5ff;
+                border-radius: 8px;
+                display: inline-block;
+                transition: background 0.2s;
+            }
+            a:hover {
+                background: #e3edff;
+            }
         </style>
     </head>
     <body>
-        <h2>🔍 Strategy Debug - Fee & Image Data</h2>
-        <a href="/">← Back to Home</a>
-        <div class="section">
-            <p><strong>Focus:</strong> Performance Fee debugging and Image URL testing</p>
-            <p><span class="highlight">Look at section "2_fee_debugging"</span> to see Fee field values</p>
+        <div class="container">
+            <h2>Debug Mode</h2>
+            <p>Debug endpoint is currently cleared.<br>Ready for new debugging tasks.</p>
+            <a href="/">← Back to Dashboard</a>
         </div>
-        <pre>{json.dumps(results, indent=2, default=str)}</pre>
     </body>
     </html>
     """
