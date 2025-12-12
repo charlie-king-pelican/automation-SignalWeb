@@ -115,13 +115,64 @@ def index():
     token = session.get('access_token') 
     
     if not token:
-        # If no token, show login button
-        return f'''
-        <div style="display:flex; justify-content:center; align-items:center; height:100vh; font-family:sans-serif;">
-            <a href="/login" style="padding:15px 30px; background:#007bff; color:white; text-decoration:none; border-radius:5px; font-weight:bold;">
-                Login with Pepperstone
-            </a>
-        </div>
+        # If no token, show login page
+        return '''
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body {
+                    background-color: #f4f6f8;
+                    font-family: sans-serif;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    height: 100vh;
+                    margin: 0;
+                }
+                .login-card {
+                    background: white;
+                    width: 400px;
+                    padding: 50px 40px;
+                    border-radius: 20px;
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+                    text-align: center;
+                }
+                .login-title {
+                    font-size: 28px;
+                    color: #333;
+                    margin-bottom: 15px;
+                    font-weight: 600;
+                }
+                .login-subtitle {
+                    font-size: 14px;
+                    color: #7f8c8d;
+                    margin-bottom: 35px;
+                }
+                .login-btn {
+                    display: inline-block;
+                    padding: 15px 40px;
+                    background: #2962ff;
+                    color: white;
+                    text-decoration: none;
+                    border-radius: 8px;
+                    font-weight: 600;
+                    font-size: 15px;
+                    transition: opacity 0.2s;
+                }
+                .login-btn:hover {
+                    opacity: 0.9;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="login-card">
+                <div class="login-title">Welcome</div>
+                <div class="login-subtitle">Sign in to access your trading accounts</div>
+                <a href="/login" class="login-btn">Login with Pepperstone</a>
+            </div>
+        </body>
+        </html>
         '''
 
     # --- 2. FETCH PROFILE INFO ---
