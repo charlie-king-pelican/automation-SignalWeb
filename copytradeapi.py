@@ -632,7 +632,7 @@ def index():
         </div> <!-- End card -->
 
         <script>
-            function handleAccountChange() {
+            function handleAccountChange() {{
                 const selector = document.getElementById('accountSelector');
                 if (!selector) return;
 
@@ -642,48 +642,48 @@ def index():
 
                 const copyBtn = document.querySelector('.copy-btn');
 
-                if (selectedAccountId) {
+                if (selectedAccountId) {{
                     localStorage.setItem('selectedAccountId', selectedAccountId);
                     if (accountType) localStorage.setItem('selectedAccountType', accountType);
 
                     if (copyBtn) copyBtn.classList.remove('hidden');
-                } else {
+                }} else {{
                     localStorage.removeItem('selectedAccountId');
                     localStorage.removeItem('selectedAccountType');
 
                     if (copyBtn) copyBtn.classList.add('hidden');
-                }
-            }
+                }}
+            }}
 
-            window.addEventListener('DOMContentLoaded', function() {
+            window.addEventListener('DOMContentLoaded', function() {{
                 const selector = document.getElementById('accountSelector');
                 if (!selector) return;
 
                 const savedAccountId = localStorage.getItem('selectedAccountId');
-                if (savedAccountId) {
+                if (savedAccountId) {{
                     selector.value = savedAccountId;
                     handleAccountChange();
                     return;
-                }
+                }}
 
                 // Auto-select first non-disabled option (first real account)
-                for (let i = 0; i < selector.options.length; i++) {
+                for (let i = 0; i < selector.options.length; i++) {{
                     const option = selector.options[i];
-                    if (!option.disabled && option.value) {
+                    if (!option.disabled && option.value) {{
                         selector.value = option.value;
                         handleAccountChange();
                         break;
-                    }
-                }
-            });
+                    }}
+                }}
+            }});
 
-            function getSelectedAccountId() {
+            function getSelectedAccountId() {{
                 return localStorage.getItem('selectedAccountId');
-            }
+            }}
 
-            function getSelectedAccountType() {
+            function getSelectedAccountType() {{
                 return localStorage.getItem('selectedAccountType');
-            }
+            }}
         </script>
     </body>
     </html>
