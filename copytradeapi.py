@@ -225,6 +225,7 @@ def index():
     unrealised_pnl = 0
     max_drawdown = 0
     balance = 0
+    equity = 0
     credit = 0
     leverage = 0
     copiers_year_profit = 0
@@ -298,6 +299,9 @@ def index():
                             credit = status_data.get('Credit', 0)
                             leverage = status_data.get('Leverage', 0)
 
+                            # Calculate equity (balance + unrealised P&L)
+                            equity = balance + unrealised_pnl
+
                             # Extract copiers performance
                             copiers_profit_data = stats_data.get('CopiersProfit', {})
                             copiers_year_profit = copiers_profit_data.get('Year', 0)
@@ -368,7 +372,7 @@ def index():
 
             /* Account Status Section */
             .account-section {{ background: linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%); border-radius: 12px; padding: 25px; color: white; margin-bottom: 15px; }}
-            .account-grid {{ display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }}
+            .account-grid {{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }}
             .account-stat {{ background: rgba(255,255,255,0.15); padding: 15px; border-radius: 8px; backdrop-filter: blur(10px); }}
             .account-stat-value {{ font-size: 20px; font-weight: 700; margin-bottom: 5px; }}
             .account-stat-label {{ font-size: 10px; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px; }}
@@ -458,6 +462,10 @@ def index():
                     <div class="account-stat">
                         <div class="account-stat-value">{format_currency(balance, currency_code)}</div>
                         <div class="account-stat-label">Balance</div>
+                    </div>
+                    <div class="account-stat">
+                        <div class="account-stat-value">{format_currency(equity, currency_code)}</div>
+                        <div class="account-stat-label">Equity</div>
                     </div>
                     <div class="account-stat">
                         <div class="account-stat-value">1:{leverage}</div>
