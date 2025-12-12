@@ -1356,6 +1356,94 @@ body.copier-trades-page {
     box-shadow: none;
 }
 
+/* Open Positions Summary Card */
+.open-positions-summary {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    padding: 20px 24px;
+    margin-bottom: 24px;
+}
+
+.summary-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.summary-icon {
+    font-size: 18px;
+}
+
+.summary-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1a1a1a;
+}
+
+.summary-total {
+    font-size: 14px;
+    color: #7f8c8d;
+}
+
+.summary-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.summary-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #f4f6f8;
+    border: 1px solid #e8ecf1;
+    border-radius: 8px;
+    padding: 10px 14px;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.summary-item:hover {
+    border-color: #2962ff;
+    background: #f0f4ff;
+    box-shadow: 0 2px 8px rgba(41,98,255,0.1);
+}
+
+.summary-item.active {
+    border-color: #2962ff;
+    background: #e8f0ff;
+    box-shadow: 0 0 0 2px rgba(41,98,255,0.15);
+}
+
+.summary-item-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1a1a1a;
+}
+
+.summary-item-count {
+    font-size: 12px;
+    font-weight: 500;
+    color: #2962ff;
+    background: rgba(41,98,255,0.1);
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+
+.summary-empty {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #5a6c7d;
+    font-size: 14px;
+}
+
+.summary-empty .summary-icon {
+    color: #2e7d32;
+}
+
 /* Accounts Page Styles */
 body.accounts-page {
     background-color: #f4f6f8;

@@ -383,8 +383,18 @@ def register_routes(app):
         if not token:
             return redirect(url_for('index'))
 
+        # Get profile_id for caching key
+        profile_id = services.get_profile_id(token)
+
         # Get accounts list for dropdown
         accounts_list = services.get_accounts_list(token)
+
+        # Get open positions summary (cached, parallel fetch)
+        open_positions_summary = {}
+        if profile_id and accounts_list:
+            open_positions_summary = services.get_open_positions_summary_for_profile(
+                profile_id, token, accounts_list
+            )
 
         # Get selected copier from query param
         selected_copier_id = request.args.get('copier_id')
@@ -442,6 +452,7 @@ def register_routes(app):
             closed_signals=closed_signals,
             closed_trades_range=closed_trades_range,
             closed_trades_stats=closed_trades_stats,
+            open_positions_summary=open_positions_summary,
             format_currency=services.format_currency
         ))
         return add_no_cache_headers(response)

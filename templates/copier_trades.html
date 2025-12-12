@@ -20,6 +20,30 @@
         <h1 class="copier-trades-title">Copier Trades</h1>
         <p class="copier-trades-subtitle">View open and closed trades for your copier accounts</p>
 
+        <!-- Open Positions Summary Card -->
+        <div class="open-positions-summary">
+            {% if open_positions_summary and open_positions_summary.total_open_positions > 0 %}
+            <div class="summary-header">
+                <span class="summary-icon">📊</span>
+                <span class="summary-title">{{ open_positions_summary.total_copiers_with_positions }} copier{{ 's' if open_positions_summary.total_copiers_with_positions != 1 else '' }} with open positions</span>
+                <span class="summary-total">({{ open_positions_summary.total_open_positions }} total)</span>
+            </div>
+            <div class="summary-list">
+                {% for copier in open_positions_summary.copiers_with_positions %}
+                <a href="/copier-trades?copier_id={{ copier.copier_id }}" class="summary-item {% if selected_copier_id and (selected_copier_id|string) == (copier.copier_id|string) %}active{% endif %}">
+                    <span class="summary-item-name">{{ copier.name }}</span>
+                    <span class="summary-item-count">{{ copier.open_count }} open</span>
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="summary-empty">
+                <span class="summary-icon">✓</span>
+                <span>No open positions across copiers</span>
+            </div>
+            {% endif %}
+        </div>
+
         <!-- Account Selector -->
         {% if accounts_list %}
         <div class="copier-trades-selector">

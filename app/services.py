@@ -8,7 +8,9 @@ import requests
 import secrets
 import hashlib
 import base64
+import time
 from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # ==========================================
 # CONFIGURATION
@@ -21,6 +23,20 @@ WHITE_LABEL_ID = 'pepperstone'
 
 # Request timeout in seconds - fail fast rather than hang
 REQUEST_TIMEOUT = 5
+
+# Short timeout for summary/count calls (parallel fetches)
+SUMMARY_REQUEST_TIMEOUT = 2
+
+# Thread pool size for parallel fetches
+MAX_PARALLEL_WORKERS = 10
+
+# ==========================================
+# IN-MEMORY CACHE
+# ==========================================
+# Simple cache for open positions summary
+# Format: { profile_id: { 'timestamp': float, 'data': [...] } }
+_open_positions_cache = {}
+OPEN_POSITIONS_CACHE_TTL = 15  # seconds
 
 
 def generate_pkce():
@@ -760,6 +776,148 @@ def get_copier_closed_signals(copier_id, token, start_dt_iso, end_dt_iso):
         return []
     except Exception:
         return []
+
+
+def _get_copier_open_count(copier_id, token):
+    """
+    Get just the count of open positions for a copier (lightweight).
+
+    Uses short timeout for parallel fetches. Returns 0 on any error.
+
+    Args:
+        copier_id: Copier account ID
+        token: Access token for API authentication
+
+    Returns:
+        int: Number of open positions, or 0 on error
+    """
+    headers = {
+        'Authorization': f"Bearer {token}",
+        'Content-Type': 'application/json'
+    }
+
+    try:
+        resp = requests.get(
+            f"{API_BASE_URL}/api/copiers/{copier_id}/signals/open",
+            headers=headers,
+            timeout=SUMMARY_REQUEST_TIMEOUT
+        )
+        if resp.status_code == 200:
+            signals = resp.json()
+            return len(signals) if isinstance(signals, list) else 0
+        return 0
+    except Exception:
+        return 0
+
+
+def get_open_positions_summary_for_profile(profile_id, token, copiers_list):
+    """
+    Get open positions count for all copiers in a profile, with caching.
+
+    Uses parallel fetching with ThreadPoolExecutor for speed.
+    Results are cached for 15 seconds per profile_id.
+
+    Args:
+        profile_id: Profile ID (used as cache key)
+        token: Access token for API authentication
+        copiers_list: List of copier dicts from get_accounts_list()
+
+    Returns:
+        dict: {
+            'copiers_with_positions': [
+                {'copier_id': str, 'name': str, 'server_code': str, 'username': str, 'open_count': int},
+                ...
+            ],
+            'total_copiers_with_positions': int,
+            'total_open_positions': int,
+            'cached': bool,
+            'timestamp': float
+        }
+    """
+    global _open_positions_cache
+
+    current_time = time.time()
+
+    # Check cache
+    if profile_id in _open_positions_cache:
+        cached = _open_positions_cache[profile_id]
+        if current_time - cached['timestamp'] < OPEN_POSITIONS_CACHE_TTL:
+            # Return cached data with flag
+            return {
+                **cached['data'],
+                'cached': True
+            }
+
+    # Not cached or stale - fetch fresh data
+    if not copiers_list:
+        result = {
+            'copiers_with_positions': [],
+            'total_copiers_with_positions': 0,
+            'total_open_positions': 0,
+            'cached': False,
+            'timestamp': current_time
+        }
+        _open_positions_cache[profile_id] = {'timestamp': current_time, 'data': result}
+        return result
+
+    # Prepare copier info for parallel fetch
+    copier_info_map = {}
+    for copier in copiers_list:
+        copier_id = str(copier.get('id', ''))
+        if copier_id:
+            copier_info_map[copier_id] = {
+                'copier_id': copier_id,
+                'name': copier.get('name', 'Unknown'),
+                'server_code': copier.get('server', 'N/A'),
+                'username': copier.get('username', 'N/A')
+            }
+
+    # Parallel fetch open counts
+    copier_counts = {}
+
+    def fetch_count(copier_id):
+        return copier_id, _get_copier_open_count(copier_id, token)
+
+    with ThreadPoolExecutor(max_workers=MAX_PARALLEL_WORKERS) as executor:
+        futures = {executor.submit(fetch_count, cid): cid for cid in copier_info_map.keys()}
+
+        for future in as_completed(futures):
+            try:
+                copier_id, count = future.result()
+                copier_counts[copier_id] = count
+            except Exception:
+                # On any error, treat as 0
+                copier_id = futures[future]
+                copier_counts[copier_id] = 0
+
+    # Build result list - only include copiers with open positions
+    copiers_with_positions = []
+    total_open = 0
+
+    for copier_id, info in copier_info_map.items():
+        count = copier_counts.get(copier_id, 0)
+        total_open += count
+        if count > 0:
+            copiers_with_positions.append({
+                **info,
+                'open_count': count
+            })
+
+    # Sort by open_count descending
+    copiers_with_positions.sort(key=lambda x: x['open_count'], reverse=True)
+
+    result = {
+        'copiers_with_positions': copiers_with_positions,
+        'total_copiers_with_positions': len(copiers_with_positions),
+        'total_open_positions': total_open,
+        'cached': False,
+        'timestamp': current_time
+    }
+
+    # Update cache
+    _open_positions_cache[profile_id] = {'timestamp': current_time, 'data': result}
+
+    return result
 
 
 def get_copy_settings(copier_id, strategy_id, token):
