@@ -93,13 +93,16 @@ def render_account_selector(accounts):
 
     options = ["<option value='' disabled selected>Select account</option>"]
     for acc in accounts:
-        if not acc.get('enabled'):
-            continue
         label = f"{acc.get('name')} • {acc.get('server')} • {acc.get('username')}"
         acc_id = acc.get('id')
         acc_type = acc.get('type', 'copier')
+
+        is_enabled = acc.get('enabled', True)
+        disabled_attr = "" if is_enabled else " disabled"
+        disabled_suffix = "" if is_enabled else " (disabled)"
+
         options.append(
-            f"<option value='{acc_id}' data-type='{acc_type}'>{label}</option>"
+            f"<option value='{acc_id}' data-type='{acc_type}'{disabled_attr}>{label}{disabled_suffix}</option>"
         )
 
     return f"""
@@ -252,7 +255,7 @@ def index():
                             'name': copier.get('Name'),
                             'server': copier.get('Connection', {}).get('ServerCode', 'N/A'),
                             'username': copier.get('Connection', {}).get('Username', 'N/A'),
-                            'enabled': copier.get('IsEnabled', False),
+                            'enabled': copier.get('IsEnabled', True),
                             'type': 'copier'
                         })
 
