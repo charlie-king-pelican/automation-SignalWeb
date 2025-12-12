@@ -198,8 +198,49 @@ def index():
         </html>
         '''
 
-    # --- 2. FETCH PROFILE INFO ---
+    # --- 2. FETCH PROFILE INFO & COPIERS ---
     profile_info = get_profile_info(token)
+
+    # Get list of accounts (copiers and strategies) for switching
+    accounts_list = []
+    profile_id = None
+    try:
+        # Get profile ID first
+        resp = requests.get(f"{IDENTITY_URL}/connect/userinfo", headers=headers)
+        if resp.status_code == 200:
+            userinfo = resp.json()
+            profile_id = userinfo.get('https://copy-trade.io/profile')
+
+            if profile_id:
+                # Get all copiers (MetaTrader accounts that copy)
+                resp = requests.get(f"{API_BASE_URL}/api/profiles/{profile_id}/copiers", headers=headers)
+                if resp.status_code == 200:
+                    copiers_data = resp.json()
+                    for copier in copiers_data:
+                        accounts_list.append({
+                            'id': copier.get('Id'),
+                            'name': copier.get('Name'),
+                            'server': copier.get('Connection', {}).get('ServerCode', 'N/A'),
+                            'username': copier.get('Connection', {}).get('Username', 'N/A'),
+                            'enabled': copier.get('IsEnabled', False),
+                            'type': 'copier'
+                        })
+
+                # Get all strategies (MetaTrader accounts that provide signals)
+                resp = requests.get(f"{API_BASE_URL}/api/profiles/{profile_id}/strategies", headers=headers)
+                if resp.status_code == 200:
+                    strategies_data = resp.json()
+                    for strategy in strategies_data:
+                        accounts_list.append({
+                            'id': strategy.get('Id'),
+                            'name': strategy.get('Name'),
+                            'server': strategy.get('Connection', {}).get('ServerCode', 'N/A'),
+                            'username': strategy.get('Connection', {}).get('Username', 'N/A'),
+                            'enabled': True,  # Strategies are always "enabled" for viewing
+                            'type': 'strategy'
+                        })
+    except Exception:
+        pass  # If account fetch fails, just show empty dropdown
 
     # --- 3. FETCH STRATEGY DATA ---
     headers = {
@@ -374,6 +415,45 @@ def index():
             .stat-value {{ font-size: 28px; font-weight: 800; color: #2962ff; margin-bottom: 8px; letter-spacing: -0.5px; }}
             .stat-label {{ font-size: 10px; color: #8492a6; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }}
 
+            /* Account Selector */
+            .account-selector-wrapper {{ margin-bottom: 25px; }}
+            .account-selector-label {{ font-size: 11px; color: #6c757d; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; margin-bottom: 8px; }}
+            .account-selector {{
+                width: 100%;
+                padding: 14px 18px;
+                font-size: 15px;
+                font-weight: 600;
+                color: #1a1a1a;
+                background: white;
+                border: 2px solid #e8ecf1;
+                border-radius: 12px;
+                cursor: pointer;
+                transition: all 0.2s;
+                appearance: none;
+                background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%232962ff' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+                background-repeat: no-repeat;
+                background-position: right 18px center;
+                padding-right: 45px;
+            }}
+            .account-selector:hover {{ border-color: #2962ff; box-shadow: 0 4px 12px rgba(41,98,255,0.1); }}
+            .account-selector:focus {{ outline: none; border-color: #2962ff; box-shadow: 0 0 0 3px rgba(41,98,255,0.1); }}
+            .account-selector option {{ padding: 10px; }}
+
+            /* Strategy Account Warning */
+            .strategy-warning {{
+                background: #fff3cd;
+                border: 1px solid #ffc107;
+                border-radius: 12px;
+                padding: 14px 18px;
+                margin-top: 15px;
+                display: none;
+                align-items: center;
+                gap: 10px;
+            }}
+            .strategy-warning-icon {{ color: #ff9800; font-size: 20px; }}
+            .strategy-warning-text {{ color: #856404; font-size: 13px; font-weight: 600; line-height: 1.5; }}
+            .copy-btn.hidden {{ display: none; }}
+
             /* Content sections container */
             .content-sections {{ padding: 30px 40px 40px; }}
 
@@ -421,6 +501,9 @@ def index():
                 <div class="badge">#1 Spotlight</div>
                 <div class="strategy-name">{name}</div>
                 <div class="inception-date">Trading since <span>{inception_display}</span></div>
+
+                <!-- Account Selector -->
+                {'<div class="account-selector-wrapper"><label class="account-selector-label">MetaTrader Account</label><select id="accountSelector" class="account-selector" onchange="handleAccountChange()" data-accounts=\'' + json.dumps(accounts_list) + '\'><option value="">Select an account...</option>' + ''.join([f'<option value="{acc["id"]}" data-type="{acc["type"]}" {"disabled" if not acc["enabled"] else ""}>[{"COPIER" if acc["type"] == "copier" else "STRATEGY"}] {acc["name"]} • {acc["server"]} • #{acc["username"]}{"  (Disabled)" if not acc["enabled"] else ""}</option>' for acc in accounts_list]) + '</select><div id="strategyWarning" class="strategy-warning"><span class="strategy-warning-icon">⚠️</span><div class="strategy-warning-text">This is a strategy account. You cannot copy signals to a strategy account. Please select a copier account.</div></div></div>' if accounts_list else ''}
 
                 <!-- Main Performance Stats -->
                 <div class="stats-container">
@@ -528,6 +611,77 @@ def index():
 
             </div> <!-- End content-sections -->
         </div> <!-- End card -->
+
+        <script>
+            // Account switching functionality
+            function handleAccountChange() {{
+                const selector = document.getElementById('accountSelector');
+                const selectedOption = selector.options[selector.selectedIndex];
+                const selectedAccountId = selector.value;
+                const accountType = selectedOption ? selectedOption.getAttribute('data-type') : null;
+
+                const copyBtn = document.querySelector('.copy-btn');
+                const warning = document.getElementById('strategyWarning');
+
+                if (selectedAccountId && accountType) {{
+                    // Store selected account ID and type
+                    localStorage.setItem('selectedAccountId', selectedAccountId);
+                    localStorage.setItem('selectedAccountType', accountType);
+                    console.log('Selected account:', selectedAccountId, 'Type:', accountType);
+
+                    if (accountType === 'strategy') {{
+                        // Strategy account selected - hide copy button, show warning
+                        if (copyBtn) copyBtn.classList.add('hidden');
+                        if (warning) warning.style.display = 'flex';
+                    }} else {{
+                        // Copier account selected - show copy button, hide warning
+                        if (copyBtn) copyBtn.classList.remove('hidden');
+                        if (warning) warning.style.display = 'none';
+                    }}
+                }} else {{
+                    // No account selected
+                    if (copyBtn) copyBtn.classList.add('hidden');
+                    if (warning) warning.style.display = 'none';
+                }}
+            }}
+
+            // On page load, restore the selected account from localStorage
+            window.addEventListener('DOMContentLoaded', function() {{
+                const selector = document.getElementById('accountSelector');
+                if (selector) {{
+                    const savedAccountId = localStorage.getItem('selectedAccountId');
+                    if (savedAccountId) {{
+                        selector.value = savedAccountId;
+                        handleAccountChange(); // Trigger logic to show/hide button
+                    }} else if (selector.options.length > 1) {{
+                        // Auto-select first enabled copier account if none selected
+                        for (let i = 1; i < selector.options.length; i++) {{
+                            const option = selector.options[i];
+                            if (!option.disabled && option.getAttribute('data-type') === 'copier') {{
+                                selector.value = option.value;
+                                handleAccountChange();
+                                break;
+                            }}
+                        }}
+                    }}
+                }}
+            }});
+
+            // Helper function to get currently selected account ID (for API calls)
+            function getSelectedAccountId() {{
+                return localStorage.getItem('selectedAccountId');
+            }}
+
+            // Helper function to check if selected account is a copier (can copy)
+            function canCopyToSelectedAccount() {{
+                return localStorage.getItem('selectedAccountType') === 'copier';
+            }}
+
+            // Helper function to get selected account type
+            function getSelectedAccountType() {{
+                return localStorage.getItem('selectedAccountType');
+            }}
+        </script>
     </body>
     </html>
     '''
