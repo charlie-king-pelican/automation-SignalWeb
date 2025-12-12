@@ -32,7 +32,7 @@
                     <option value="" disabled {% if not selected_copier_id %}selected{% endif %}>Select account</option>
                     {% for acc in accounts_list %}
                     <option value="{{ acc.id }}" data-type="{{ acc.type }}"
-                            {% if selected_copier_id and selected_copier_id == acc.id %}selected{% endif %}>
+                            {% if selected_copier_id and (selected_copier_id|string) == (acc.id|string) %}selected{% endif %}>
                         {{ acc.name }} • {{ acc.server }} • {{ acc.username }}
                     </option>
                     {% endfor %}
