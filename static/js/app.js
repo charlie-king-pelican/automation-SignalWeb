@@ -84,7 +84,7 @@ function showTradesTab(which) {
 function openCopyModal() {
     const modal = document.getElementById('copyModal');
     if (modal) {
-        modal.style.display = 'block';
+        modal.style.display = 'flex'; // Use flex for centering
         document.body.style.overflow = 'hidden'; // Prevent background scrolling
     }
 }
@@ -106,7 +106,7 @@ function closeCopyModal() {
 function openStopModal() {
     const modal = document.getElementById('stopModal');
     if (modal) {
-        modal.style.display = 'block';
+        modal.style.display = 'flex'; // Use flex for centering
         document.body.style.overflow = 'hidden'; // Prevent background scrolling
     }
 }

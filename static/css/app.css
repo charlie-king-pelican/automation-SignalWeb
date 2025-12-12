@@ -403,14 +403,16 @@ body {
     backdrop-filter: blur(10px);
 }
 
-.copier-stat-value {
+/* Dashboard Copiers Performance values - scoped to copiers-section */
+.copiers-section .copier-stat-value {
     font-size: 20px;
     font-weight: 700;
     margin-bottom: 5px;
     color: white;
 }
 
-.copier-stat-label {
+/* Dashboard Copiers Performance labels - scoped to copiers-section */
+.copiers-section .copier-stat-label {
     font-size: 10px;
     opacity: 0.9;
     text-transform: uppercase;
@@ -761,6 +763,19 @@ body {
     border-radius: 10px;
     transition: all 0.2s;
     font-family: inherit;
+    box-sizing: border-box;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+
+/* Restore dropdown arrow for select elements */
+select.form-control {
+    background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%232962ff' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 40px;
+    cursor: pointer;
 }
 
 .form-control:hover {
