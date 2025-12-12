@@ -166,6 +166,61 @@
                     <button id="tabClosed" class="tab-btn" type="button" onclick="showTradesTab('closed')">Closed</button>
                 </div>
 
+                <!-- Closed Trades Date Range Selector -->
+                <div id="closedRangeSelector" class="range-selector" style="display: none;">
+                    <div class="range-label">Closed trades range:</div>
+                    <div class="range-pills">
+                        <a href="/?range=7d#trades" class="range-pill {% if closed_trades_range == '7d' %}active{% endif %}">7D</a>
+                        <a href="/?range=30d#trades" class="range-pill {% if closed_trades_range == '30d' %}active{% endif %}">30D</a>
+                        <a href="/?range=90d#trades" class="range-pill {% if closed_trades_range == '90d' %}active{% endif %}">90D</a>
+                        <a href="/?range=ytd#trades" class="range-pill {% if closed_trades_range == 'ytd' %}active{% endif %}">YTD</a>
+                    </div>
+                </div>
+
+                <!-- Closed Trades Summary Stats -->
+                {% if closed_trades_stats and closed_trades_stats.trades_count > 0 %}
+                <div id="closedStatsRow" class="closed-stats-row" style="display: none;">
+                    <div class="closed-stat-card">
+                        <div class="closed-stat-value">{{ '{:,}'.format(closed_trades_stats.trades_count) }}</div>
+                        <div class="closed-stat-label">Trades</div>
+                    </div>
+                    <div class="closed-stat-card">
+                        <div class="closed-stat-value">{{ '%.1f'|format(closed_trades_stats.win_rate_pct) }}%</div>
+                        <div class="closed-stat-label">Win Rate</div>
+                    </div>
+                    <div class="closed-stat-card">
+                        <div class="closed-stat-value {{ 'positive-pnl' if closed_trades_stats.total_realised_pnl >= 0 else 'negative-pnl' }}">
+                            {{ format_currency(closed_trades_stats.total_realised_pnl, strategy.currency_code) }}
+                        </div>
+                        <div class="closed-stat-label">Total P&L</div>
+                    </div>
+                    <div class="closed-stat-card">
+                        <div class="closed-stat-value {{ 'positive-pnl' if closed_trades_stats.avg_realised_pnl >= 0 else 'negative-pnl' }}">
+                            {{ format_currency(closed_trades_stats.avg_realised_pnl, strategy.currency_code) }}
+                        </div>
+                        <div class="closed-stat-label">Avg P&L</div>
+                    </div>
+                    <div class="closed-stat-card">
+                        <div class="closed-stat-value">
+                            {% if closed_trades_stats.profit_factor is not none %}
+                                {{ '%.2f'|format(closed_trades_stats.profit_factor) }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </div>
+                        <div class="closed-stat-label">Profit Factor</div>
+                    </div>
+                    <div class="closed-stat-card">
+                        <div class="closed-stat-value positive-pnl">{{ format_currency(closed_trades_stats.biggest_win, strategy.currency_code) }}</div>
+                        <div class="closed-stat-label">Best</div>
+                    </div>
+                    <div class="closed-stat-card">
+                        <div class="closed-stat-value negative-pnl">{{ format_currency(closed_trades_stats.biggest_loss, strategy.currency_code) }}</div>
+                        <div class="closed-stat-label">Worst</div>
+                    </div>
+                </div>
+                {% endif %}
+
                 <div id="panelOpen" class="trades-panel active">
                     <table class="trades-table">
                         <thead>

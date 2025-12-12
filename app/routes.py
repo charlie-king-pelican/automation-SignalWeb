@@ -74,16 +74,29 @@ def register_routes(app):
         strategy_id = strategy_data.get('strategy_id')
         open_signals = []
         closed_signals = []
+        closed_trades_range = request.args.get('range', '30d')  # Default: 30 days
+        closed_trades_stats = {}
 
         if strategy_id:
             from datetime import datetime, timedelta
 
-            # Fetch open signals
+            # Fetch open signals (unchanged)
             open_signals = services.get_strategy_open_signals(strategy_id, token)
 
-            # Fetch closed signals (last 30 days UTC)
+            # Compute date range for closed signals based on query param
             end_dt = datetime.utcnow()
-            start_dt = end_dt - timedelta(days=30)
+
+            if closed_trades_range == '7d':
+                start_dt = end_dt - timedelta(days=7)
+            elif closed_trades_range == '90d':
+                start_dt = end_dt - timedelta(days=90)
+            elif closed_trades_range == 'ytd':
+                # Year-to-date: January 1st of current year
+                start_dt = datetime(end_dt.year, 1, 1)
+            else:  # Default: 30d
+                closed_trades_range = '30d'  # Normalize
+                start_dt = end_dt - timedelta(days=30)
+
             start_dt_iso = start_dt.strftime('%Y-%m-%dT%H:%M:%SZ')
             end_dt_iso = end_dt.strftime('%Y-%m-%dT%H:%M:%SZ')
             closed_signals = services.get_strategy_closed_signals(strategy_id, token, start_dt_iso, end_dt_iso)
@@ -93,6 +106,10 @@ def register_routes(app):
                 open_signals = sorted(open_signals, key=lambda x: x.get('OpenTimestamp', ''), reverse=True)
             if closed_signals:
                 closed_signals = sorted(closed_signals, key=lambda x: x.get('CloseTimestamp', ''), reverse=True)
+
+            # Compute summary stats for closed trades
+            if closed_signals:
+                closed_trades_stats = services.compute_closed_trades_stats(closed_signals)
 
         # --- 3. RENDER UI ---
         # Calculate display values
@@ -109,6 +126,8 @@ def register_routes(app):
             fee_display=fee_display,
             open_signals=open_signals,
             closed_signals=closed_signals,
+            closed_trades_range=closed_trades_range,
+            closed_trades_stats=closed_trades_stats,
             format_currency=services.format_currency
         ))
         return add_no_cache_headers(response)

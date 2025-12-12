@@ -426,6 +426,65 @@ def format_currency(value, code="USD"):
     return f"{symbol}{value:,.2f}"
 
 
+def compute_closed_trades_stats(closed_signals):
+    """
+    Compute summary statistics for closed trades.
+
+    Args:
+        closed_signals: List of closed signal dicts with RealisedProfit field
+
+    Returns:
+        dict: Statistics including trades_count, wins_count, losses_count,
+              win_rate_pct, total_realised_pnl, avg_realised_pnl,
+              profit_factor, biggest_win, biggest_loss
+    """
+    if not closed_signals:
+        return {
+            'trades_count': 0,
+            'wins_count': 0,
+            'losses_count': 0,
+            'win_rate_pct': 0.0,
+            'total_realised_pnl': 0.0,
+            'avg_realised_pnl': 0.0,
+            'profit_factor': None,
+            'biggest_win': 0.0,
+            'biggest_loss': 0.0
+        }
+
+    trades_count = len(closed_signals)
+    pnl_values = [signal.get('RealisedProfit', 0.0) for signal in closed_signals]
+
+    wins = [pnl for pnl in pnl_values if pnl > 0]
+    losses = [pnl for pnl in pnl_values if pnl < 0]
+
+    wins_count = len(wins)
+    losses_count = len(losses)
+    win_rate_pct = (wins_count / trades_count * 100) if trades_count > 0 else 0.0
+
+    total_realised_pnl = sum(pnl_values)
+    avg_realised_pnl = total_realised_pnl / trades_count if trades_count > 0 else 0.0
+
+    # Profit factor: sum of wins / abs(sum of losses)
+    sum_wins = sum(wins) if wins else 0.0
+    sum_losses = abs(sum(losses)) if losses else 0.0
+    profit_factor = (sum_wins / sum_losses) if sum_losses > 0 else None
+
+    biggest_win = max(pnl_values) if pnl_values else 0.0
+    biggest_loss = min(pnl_values) if pnl_values else 0.0
+
+    return {
+        'trades_count': trades_count,
+        'wins_count': wins_count,
+        'losses_count': losses_count,
+        'win_rate_pct': win_rate_pct,
+        'total_realised_pnl': total_realised_pnl,
+        'avg_realised_pnl': avg_realised_pnl,
+        'profit_factor': profit_factor,
+        'biggest_win': biggest_win,
+        'biggest_loss': biggest_loss
+    }
+
+
 def build_auth_url(redirect_uri, challenge):
     """
     Build OAuth authorization URL with PKCE challenge.
