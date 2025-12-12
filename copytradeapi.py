@@ -299,8 +299,7 @@ def accounts():
                 .back-link {{ color: #2962ff; text-decoration: none; font-weight: 600; font-size: 14px; }}
                 .back-link:hover {{ text-decoration: underline; }}
                 .container {{ max-width: 1000px; margin: 0 auto; }}
-                .account-card {{ background: white; border-radius: 12px; padding: 20px 25px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); display: flex; justify-content: space-between; align-items: center; position: relative; }}
-                .account-card.enabled {{ border-left: 4px solid #2962ff; background: #f8f9ff; }}
+                .account-card {{ background: white; border-radius: 12px; padding: 20px 25px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); display: flex; justify-content: space-between; align-items: center; }}
                 .account-info {{ flex: 1; }}
                 .account-name {{ font-size: 16px; font-weight: 600; color: #333; margin-bottom: 5px; }}
                 .account-details {{ font-size: 13px; color: #7f8c8d; }}
@@ -309,36 +308,8 @@ def accounts():
                 .stat-row {{ margin-bottom: 5px; }}
                 .stat-label {{ font-size: 11px; color: #7f8c8d; text-transform: uppercase; letter-spacing: 0.5px; margin-right: 8px; }}
                 .stat-value {{ font-size: 16px; font-weight: 700; color: #2962ff; }}
-                .status-badge {{ display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }}
-                .status-enabled {{ background-color: #e8f5e9; color: #2e7d32; }}
-                .status-disabled {{ background-color: #ffebee; color: #c62828; }}
-                .enable-btn {{ background: #2962ff; color: white; border: none; padding: 8px 20px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; transition: opacity 0.2s; }}
-                .enable-btn:hover {{ opacity: 0.9; }}
-                .enable-btn.enabled {{ background: #e8f5e9; color: #2e7d32; cursor: default; }}
-                .enable-btn.enabled:hover {{ opacity: 1; }}
-                .account-actions {{ display: flex; gap: 10px; align-items: center; margin-left: 20px; }}
                 .no-data {{ text-align: center; padding: 60px 20px; color: #7f8c8d; }}
             </style>
-            <script>
-                function toggleAccount(copierId, enable) {{
-                    if (confirm(enable ? 'Enable this account for copying?' : 'Disable this account?')) {{
-                        fetch(`/accounts/toggle/${{copierId}}?enable=${{enable}}`, {{
-                            method: 'POST'
-                        }})
-                        .then(response => response.json())
-                        .then(data => {{
-                            if (data.success) {{
-                                location.reload();
-                            }} else {{
-                                alert('Error: ' + (data.error || 'Failed to toggle account'));
-                            }}
-                        }})
-                        .catch(error => {{
-                            alert('Error: ' + error);
-                        }});
-                    }}
-                }}
-            </script>
         </head>
         <body>
             <div class="header">
@@ -352,13 +323,6 @@ def accounts():
             accounts_html += '<div class="no-data">No copier accounts found</div>'
         else:
             for copier in copiers_with_stats:
-                is_enabled = copier['enabled']
-                status_class = 'status-enabled' if is_enabled else 'status-disabled'
-                status_text = 'Active' if is_enabled else 'Inactive'
-                card_class = 'enabled' if is_enabled else ''
-                btn_class = 'enabled' if is_enabled else ''
-                btn_text = 'Enabled' if is_enabled else 'Enable'
-
                 balance = copier['stats'].get('balance', 0)
                 equity = copier['stats'].get('equity', 0)
                 leverage = copier['stats'].get('leverage')
@@ -370,13 +334,12 @@ def accounts():
                 return_color = '#2e7d32' if return_pct >= 0 else '#c62828'
 
                 accounts_html += f'''
-                <div class="account-card {card_class}">
+                <div class="account-card">
                     <div class="account-info">
                         <div class="account-name">{copier['name']}</div>
                         <div class="account-details">
                             <span>{copier['server']}</span>
                             <span>#{copier['username']}</span>
-                            <span class="status-badge {status_class}">{status_text}</span>
                             {f'<span style="color: #7f8c8d; font-size: 12px;">1:{leverage}</span>' if leverage else ''}
                         </div>
                     </div>
@@ -398,9 +361,6 @@ def accounts():
                             <span class="stat-value" style="color: #c62828;">{drawdown_pct:.2f}%</span>
                         </div>
                     </div>
-                    <div class="account-actions">
-                        <button class="enable-btn {btn_class}" onclick="toggleAccount({copier['id']}, {str(not is_enabled).lower()})" {'disabled' if is_enabled else ''}>{btn_text}</button>
-                    </div>
                 </div>
                 '''
 
@@ -414,63 +374,6 @@ def accounts():
 
     except Exception as e:
         return f"Error: {e}", 500
-
-@app.route('/accounts/toggle/<int:copier_id>', methods=['POST'])
-def toggle_account(copier_id):
-    """Enable/disable a copier account"""
-    token = session.get('access_token')
-    if not token:
-        return {'success': False, 'error': 'Not authenticated'}, 401
-
-    enable = request.args.get('enable', 'false').lower() == 'true'
-
-    headers = {
-        'Authorization': f"Bearer {token}",
-        'Content-Type': 'application/json'
-    }
-
-    try:
-        # Get profile ID
-        resp = requests.get(f"{IDENTITY_URL}/connect/userinfo", headers=headers)
-        if resp.status_code != 200:
-            return {'success': False, 'error': 'Failed to get user info'}, 500
-
-        userinfo = resp.json()
-        profile_id = userinfo.get('https://copy-trade.io/profile')
-
-        if not profile_id:
-            return {'success': False, 'error': 'Profile ID not found'}, 500
-
-        # TODO: Call the correct API endpoint to enable/disable the copier
-        # This is a placeholder - need to confirm the correct endpoint with the user
-        # For now, attempting PUT /api/profiles/{profileId}/copiers/{copierId}
-
-        # Get current copier details first
-        resp = requests.get(f"{API_BASE_URL}/api/profiles/{profile_id}/copiers/{copier_id}", headers=headers)
-        if resp.status_code != 200:
-            return {'success': False, 'error': 'Failed to get copier details'}, 500
-
-        copier_data = resp.json()
-
-        # Update copier with IsEnabled flag (if supported)
-        update_payload = {
-            'name': copier_data['Name'],
-            'isEnabled': enable  # This may need adjustment based on actual API
-        }
-
-        resp = requests.put(
-            f"{API_BASE_URL}/api/profiles/{profile_id}/copiers/{copier_id}",
-            headers=headers,
-            json=update_payload
-        )
-
-        if resp.status_code == 200:
-            return {'success': True}
-        else:
-            return {'success': False, 'error': f'API returned {resp.status_code}: {resp.text}'}, 500
-
-    except Exception as e:
-        return {'success': False, 'error': str(e)}, 500
 
 @app.route('/login')
 def login():
@@ -579,9 +482,13 @@ def debug_api():
 
 @app.route('/logout')
 def logout():
-    # Log out by clearing the token from the session
+    # Clear local session
     session.pop('access_token', None)
-    return redirect(url_for('index'))
+    session.clear()
+
+    # Redirect to Pepperstone's logout endpoint to clear their session
+    logout_url = f"{IDENTITY_URL}/connect/endsession?post_logout_redirect_uri={REDIRECT_URI}"
+    return redirect(logout_url)
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
