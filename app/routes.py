@@ -88,11 +88,6 @@ def register_routes(app):
 
             if closed_trades_range == '7d':
                 start_dt = end_dt - timedelta(days=7)
-            elif closed_trades_range == '90d':
-                start_dt = end_dt - timedelta(days=90)
-            elif closed_trades_range == 'ytd':
-                # Year-to-date: January 1st of current year
-                start_dt = datetime(end_dt.year, 1, 1)
             else:  # Default: 30d
                 closed_trades_range = '30d'  # Normalize
                 start_dt = end_dt - timedelta(days=30)
