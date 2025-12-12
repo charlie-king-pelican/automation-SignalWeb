@@ -374,3 +374,73 @@ def register_routes(app):
         else:
             # Redirect back to copying page
             return redirect(url_for('copying'))
+
+    @app.route('/copier-trades')
+    def copier_trades():
+        """Display trades for a selected copier account."""
+        token = session.get('access_token')
+        if not token:
+            return redirect(url_for('index'))
+
+        # Get accounts list for dropdown
+        accounts_list = services.get_accounts_list(token)
+
+        # Get selected copier from query param
+        selected_copier_id = request.args.get('copier_id')
+        closed_trades_range = request.args.get('range', '30d')
+
+        # Initialize data
+        open_signals = []
+        closed_signals = []
+        closed_trades_stats = {}
+        selected_copier_name = None
+
+        # Find the selected copier name for display
+        if selected_copier_id and accounts_list:
+            for acc in accounts_list:
+                if str(acc.get('id')) == str(selected_copier_id):
+                    selected_copier_name = acc.get('name', 'Unknown')
+                    break
+
+        # Fetch signals if a copier is selected
+        if selected_copier_id:
+            from datetime import datetime, timedelta
+
+            # Fetch open signals
+            open_signals = services.get_copier_open_signals(selected_copier_id, token)
+
+            # Compute date range for closed signals
+            end_dt = datetime.utcnow()
+
+            if closed_trades_range == '7d':
+                start_dt = end_dt - timedelta(days=7)
+            else:  # Default: 30d
+                closed_trades_range = '30d'  # Normalize
+                start_dt = end_dt - timedelta(days=30)
+
+            start_dt_iso = start_dt.strftime('%Y-%m-%dT%H:%M:%SZ')
+            end_dt_iso = end_dt.strftime('%Y-%m-%dT%H:%M:%SZ')
+            closed_signals = services.get_copier_closed_signals(selected_copier_id, token, start_dt_iso, end_dt_iso)
+
+            # Sort signals: newest first
+            if open_signals:
+                open_signals = sorted(open_signals, key=lambda x: x.get('OpenTimestamp', ''), reverse=True)
+            if closed_signals:
+                closed_signals = sorted(closed_signals, key=lambda x: x.get('CloseTimestamp', ''), reverse=True)
+
+            # Compute summary stats for closed trades
+            if closed_signals:
+                closed_trades_stats = services.compute_closed_trades_stats(closed_signals)
+
+        response = make_response(render_template(
+            'copier_trades.html',
+            accounts_list=accounts_list,
+            selected_copier_id=selected_copier_id,
+            selected_copier_name=selected_copier_name,
+            open_signals=open_signals,
+            closed_signals=closed_signals,
+            closed_trades_range=closed_trades_range,
+            closed_trades_stats=closed_trades_stats,
+            format_currency=services.format_currency
+        ))
+        return add_no_cache_headers(response)

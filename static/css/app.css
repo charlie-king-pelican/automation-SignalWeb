@@ -1243,6 +1243,119 @@ body.copying-page {
     line-height: 1.5;
 }
 
+/* Copier Trades Page Styles */
+body.copier-trades-page {
+    background: #f4f6f8;
+    min-height: 100vh;
+    padding-top: 60px; /* Account for fixed nav */
+    display: block;
+}
+
+.copier-trades-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 40px 20px;
+}
+
+.copier-trades-title {
+    font-size: 32px;
+    color: #1a1a1a;
+    margin: 0 0 8px 0;
+    font-weight: 700;
+}
+
+.copier-trades-subtitle {
+    font-size: 15px;
+    color: #6c757d;
+    margin: 0 0 30px 0;
+}
+
+.copier-trades-selector {
+    margin-bottom: 30px;
+}
+
+.copier-trades-selector .selector-label {
+    font-size: 11px;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    display: block;
+}
+
+.copier-selector {
+    width: 100%;
+    max-width: 500px;
+    padding: 14px 18px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #1a1a1a;
+    background: white;
+    border: 2px solid #e8ecf1;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%232962ff' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 18px center;
+    padding-right: 45px;
+}
+
+.copier-selector:hover {
+    border-color: #2962ff;
+    box-shadow: 0 4px 12px rgba(41,98,255,0.1);
+}
+
+.copier-selector:focus {
+    outline: none;
+    border-color: #2962ff;
+    box-shadow: 0 0 0 3px rgba(41,98,255,0.1);
+}
+
+.copier-trades-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    overflow: hidden;
+}
+
+.copier-trades-header {
+    padding: 24px 28px;
+    border-bottom: 1px solid #e8ecf1;
+}
+
+.copier-trades-header h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: #1a1a1a;
+}
+
+.trades-tabs-wrapper {
+    padding: 20px 28px 0;
+}
+
+/* Reuse existing trades-tabs, tab-btn, trades-panel, trades-table styles */
+.copier-trades-card .trades-tabs {
+    margin-bottom: 0;
+}
+
+.copier-trades-card .range-selector {
+    margin: 18px 28px 0;
+}
+
+.copier-trades-card .closed-stats-row {
+    margin: 18px 28px 0;
+}
+
+.copier-trades-card .trades-panel {
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+}
+
 /* Accounts Page Styles */
 body.accounts-page {
     background-color: #f4f6f8;

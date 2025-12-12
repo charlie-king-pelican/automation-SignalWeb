@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Copier Trades - Copy Trade Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+</head>
+<body class="copier-trades-page">
+    <!-- Navigation -->
+    <div class="page-nav">
+        <a href="/" class="nav-link">Dashboard</a>
+        <a href="/accounts" class="nav-link">Accounts</a>
+        <a href="/copying" class="nav-link">Copying</a>
+        <a href="/copier-trades" class="nav-link active">Copier Trades</a>
+        <a href="/logout" class="nav-link nav-link-logout">Logout</a>
+    </div>
+
+    <div class="copier-trades-container">
+        <h1 class="copier-trades-title">Copier Trades</h1>
+        <p class="copier-trades-subtitle">View open and closed trades for your copier accounts</p>
+
+        <!-- Account Selector -->
+        {% if accounts_list %}
+        <div class="copier-trades-selector">
+            <label class="selector-label">Select Account</label>
+            <select id="copierSelector" class="copier-selector" onchange="handleCopierChange()">
+                <option value="" disabled {% if not selected_copier_id %}selected{% endif %}>Select a copier account</option>
+                {% for acc in accounts_list %}
+                <option value="{{ acc.id }}"
+                        {% if selected_copier_id and (selected_copier_id|string) == (acc.id|string) %}selected{% endif %}>
+                    {{ acc.name }} - {{ acc.server }} - {{ acc.username }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
+
+        {% if not selected_copier_id %}
+        <!-- Empty State -->
+        <div class="empty-state-card">
+            <p>Select a copier account above to view its trades.</p>
+        </div>
+        {% else %}
+        <!-- Trades Content -->
+        <div class="copier-trades-card">
+            {% if selected_copier_name %}
+            <div class="copier-trades-header">
+                <h2>{{ selected_copier_name }}</h2>
+            </div>
+            {% endif %}
+
+            <!-- Trades Tabs -->
+            <div class="trades-tabs-wrapper">
+                <div class="trades-tabs">
+                    <button id="tabOpen" class="tab-btn active" type="button" onclick="showCopierTradesTab('open')">Open</button>
+                    <button id="tabClosed" class="tab-btn" type="button" onclick="showCopierTradesTab('closed')">Closed</button>
+                </div>
+            </div>
+
+            <!-- Closed Trades Date Range Selector -->
+            <div id="closedRangeSelector" class="range-selector" style="display: none;">
+                <div class="range-label">Closed trades range:</div>
+                <div class="range-pills">
+                    <a href="/copier-trades?copier_id={{ selected_copier_id }}&range=7d" class="range-pill {% if closed_trades_range == '7d' %}active{% endif %}">7D</a>
+                    <a href="/copier-trades?copier_id={{ selected_copier_id }}&range=30d" class="range-pill {% if closed_trades_range == '30d' %}active{% endif %}">30D</a>
+                </div>
+            </div>
+
+            <!-- Closed Trades Summary Stats -->
+            {% if closed_trades_stats and closed_trades_stats.trades_count > 0 %}
+            <div id="closedStatsRow" class="closed-stats-row" style="display: none;">
+                <div class="closed-stat-card">
+                    <div class="closed-stat-value">{{ '{:,}'.format(closed_trades_stats.trades_count) }}</div>
+                    <div class="closed-stat-label">Trades</div>
+                </div>
+                <div class="closed-stat-card">
+                    <div class="closed-stat-value">{{ '%.1f'|format(closed_trades_stats.win_rate_pct) }}%</div>
+                    <div class="closed-stat-label">Win Rate</div>
+                </div>
+                <div class="closed-stat-card">
+                    <div class="closed-stat-value {{ 'positive-pnl' if closed_trades_stats.total_realised_pnl >= 0 else 'negative-pnl' }}">
+                        {{ format_currency(closed_trades_stats.total_realised_pnl, 'USD') }}
+                    </div>
+                    <div class="closed-stat-label">Total P&L</div>
+                </div>
+                <div class="closed-stat-card">
+                    <div class="closed-stat-value {{ 'positive-pnl' if closed_trades_stats.avg_realised_pnl >= 0 else 'negative-pnl' }}">
+                        {{ format_currency(closed_trades_stats.avg_realised_pnl, 'USD') }}
+                    </div>
+                    <div class="closed-stat-label">Avg P&L</div>
+                </div>
+                <div class="closed-stat-card">
+                    <div class="closed-stat-value">
+                        {% if closed_trades_stats.most_common_symbol %}
+                            {{ closed_trades_stats.most_common_symbol }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </div>
+                    <div class="closed-stat-label">Most Traded</div>
+                </div>
+                <div class="closed-stat-card">
+                    <div class="closed-stat-value positive-pnl">{{ format_currency(closed_trades_stats.biggest_win, 'USD') }}</div>
+                    <div class="closed-stat-label">Best</div>
+                </div>
+                <div class="closed-stat-card">
+                    <div class="closed-stat-value negative-pnl">{{ format_currency(closed_trades_stats.biggest_loss, 'USD') }}</div>
+                    <div class="closed-stat-label">Worst</div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Open Trades Panel -->
+            <div id="panelOpen" class="trades-panel active">
+                <table class="trades-table">
+                    <thead>
+                        <tr>
+                            <th>Symbol</th>
+                            <th>Direction</th>
+                            <th>Lots</th>
+                            <th>Open Price</th>
+                            <th class="muted">Open Time</th>
+                            <th>PnL</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if open_signals %}
+                            {% for signal in open_signals %}
+                            <tr>
+                                <td>{{ signal.get('Instrument', '-') }}</td>
+                                <td>
+                                    <span class="pill {{ 'buy' if signal.get('Direction', '').lower() == 'buy' else 'sell' }}">
+                                        {{ signal.get('Direction', '-') }}
+                                    </span>
+                                </td>
+                                <td>{{ '%.2f'|format(signal.get('Quantity', 0)) }}</td>
+                                <td>{{ '%.5f'|format(signal.get('OpenPrice', 0)) }}</td>
+                                <td class="muted">
+                                    {% set open_time = signal.get('OpenTimestamp', '') %}
+                                    {% if open_time %}
+                                        {{ open_time[:16].replace('T', ' ') }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td class="{{ 'positive-pnl' if signal.get('UnrealisedProfit', 0) >= 0 else 'negative-pnl' }}">
+                                    {{ '%+.2f'|format(signal.get('UnrealisedProfit', 0)) }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="6" class="empty-state">No open positions.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Closed Trades Panel -->
+            <div id="panelClosed" class="trades-panel">
+                <table class="trades-table">
+                    <thead>
+                        <tr>
+                            <th>Symbol</th>
+                            <th>Direction</th>
+                            <th>Lots</th>
+                            <th>Open</th>
+                            <th>Close</th>
+                            <th>PnL</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if closed_signals %}
+                            {% for signal in closed_signals %}
+                            <tr>
+                                <td>{{ signal.get('Instrument', '-') }}</td>
+                                <td>
+                                    <span class="pill {{ 'buy' if signal.get('Direction', '').lower() == 'buy' else 'sell' }}">
+                                        {{ signal.get('Direction', '-') }}
+                                    </span>
+                                </td>
+                                <td>{{ '%.2f'|format(signal.get('Quantity', 0)) }}</td>
+                                <td class="muted">
+                                    {% set open_time = signal.get('OpenTimestamp', '') %}
+                                    {% if open_time %}
+                                        {{ open_time[:16].replace('T', ' ') }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td class="muted">
+                                    {% set close_time = signal.get('CloseTimestamp', '') %}
+                                    {% if close_time %}
+                                        {{ close_time[:16].replace('T', ' ') }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td class="{{ 'positive-pnl' if signal.get('RealisedProfit', 0) >= 0 else 'negative-pnl' }}">
+                                    {{ '%+.2f'|format(signal.get('RealisedProfit', 0)) }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="6" class="empty-state">No closed trades in the selected period.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+    /**
+     * Handle copier dropdown change
+     */
+    function handleCopierChange() {
+        const selector = document.getElementById('copierSelector');
+        if (!selector) return;
+
+        const selectedId = selector.value;
+        if (selectedId) {
+            window.location.href = '/copier-trades?copier_id=' + encodeURIComponent(selectedId);
+        } else {
+            window.location.href = '/copier-trades';
+        }
+    }
+
+    /**
+     * Show open or closed trades tab
+     */
+    function showCopierTradesTab(which) {
+        const tabOpen = document.getElementById('tabOpen');
+        const tabClosed = document.getElementById('tabClosed');
+        const panelOpen = document.getElementById('panelOpen');
+        const panelClosed = document.getElementById('panelClosed');
+        const rangeSelector = document.getElementById('closedRangeSelector');
+        const statsRow = document.getElementById('closedStatsRow');
+
+        if (which === 'closed') {
+            tabClosed?.classList.add('active');
+            tabOpen?.classList.remove('active');
+            panelClosed?.classList.add('active');
+            panelOpen?.classList.remove('active');
+            if (rangeSelector) rangeSelector.style.display = 'flex';
+            if (statsRow) statsRow.style.display = 'flex';
+        } else {
+            tabOpen?.classList.add('active');
+            tabClosed?.classList.remove('active');
+            panelOpen?.classList.add('active');
+            panelClosed?.classList.remove('active');
+            if (rangeSelector) rangeSelector.style.display = 'none';
+            if (statsRow) statsRow.style.display = 'none';
+        }
+    }
+
+    // Initialize: show closed tab if range param is present
+    document.addEventListener('DOMContentLoaded', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('range')) {
+            showCopierTradesTab('closed');
+        }
+    });
+    </script>
+</body>
+</html>
