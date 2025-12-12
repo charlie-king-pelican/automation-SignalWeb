@@ -213,52 +213,103 @@ def index():
     name = "Unknown"
     copiers = 0
     return_val = 0.0
-    
+    strategy_id = None
+    inception_date = None
+    total_trades = 0
+    min_per_month = 0
+    max_per_month = 0
+    wins = 0
+    losses = 0
+
     try:
         resp = requests.get(endpoint, headers=headers, params=params)
-        
+
         # If token is invalid/expired mid-session, clear session and force re-login
         if resp.status_code == 401:
-            session.pop('access_token', None) 
-            return redirect(url_for('index')) 
-            
+            session.pop('access_token', None)
+            return redirect(url_for('index'))
+
         if resp.status_code == 200:
             data = resp.json()
             if data and len(data) > 0:
                 # Displays the #1 Strategy (change index if needed)
-                top_item = data[0] 
-                
+                top_item = data[0]
+
                 raw_val = top_item.get('Value', 0)
                 return_val = raw_val * 100
-                
+
                 strategy = top_item.get('Strategy', {})
                 name = strategy.get('Name', 'Unknown')
                 copiers = strategy.get('NumCopiers', 0)
+                strategy_id = strategy.get('Id')
+
+                # Get detailed stats for this strategy
+                if strategy_id:
+                    try:
+                        stats_resp = requests.get(
+                            f"{API_BASE_URL}/api/strategies/{strategy_id}/stats",
+                            headers=headers,
+                            params={'wl': WHITE_LABEL_ID}
+                        )
+                        if stats_resp.status_code == 200:
+                            stats_data = stats_resp.json()
+
+                            # Extract inception date
+                            inception_str = stats_data.get('Inception')
+                            if inception_str:
+                                from datetime import datetime
+                                inception_dt = datetime.fromisoformat(inception_str.replace('Z', '+00:00'))
+                                inception_date = inception_dt.strftime('%B %d, %Y')
+
+                            # Extract trade statistics
+                            trades_data = stats_data.get('Trades', {}).get('Inception', {})
+                            total_trades = trades_data.get('Total', 0)
+                            min_per_month = trades_data.get('MinPerMonth', 0)
+                            max_per_month = trades_data.get('MaxPerMonth', 0)
+                            wins = trades_data.get('Wins', 0)
+                            losses = trades_data.get('Losses', 0)
+                    except Exception:
+                        pass  # If stats fetch fails, just use default values
     except Exception as e:
         name = "Connection Error"
 
     # --- 3. RENDER UI ---
+    # Calculate win rate if we have trades
+    win_rate = 0
+    if total_trades > 0:
+        win_rate = (wins / total_trades) * 100
+
+    inception_display = inception_date if inception_date else "Unknown"
+
     html = f'''
     <!DOCTYPE html>
     <html>
     <head>
         <style>
-            body {{ background-color: #f4f6f8; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; position: relative; }}
+            body {{ background-color: #f4f6f8; font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; position: relative; padding: 20px; }}
             .profile-info {{ position: absolute; top: 20px; left: 20px; background: white; padding: 15px 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); text-decoration: none; display: block; transition: transform 0.2s, box-shadow 0.2s; }}
             .profile-info:hover {{ transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,0,0,0.12); cursor: pointer; }}
             .profile-name {{ font-size: 16px; font-weight: 600; color: #333; margin-bottom: 5px; }}
             .profile-accounts {{ font-size: 12px; color: #7f8c8d; }}
             .profile-accounts span {{ color: #2962ff; font-weight: 600; }}
-            .card {{ background: white; width: 450px; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); text-align: center; }}
-            .badge {{ background-color: #f5a623; color: white; padding: 6px 16px; border-radius: 20px; font-weight: bold; font-size: 12px; margin-bottom: 25px; display:inline-block; }}
-            .strategy-name {{ font-size: 26px; color: #333; margin-bottom: 35px; font-weight: 600; }}
-            .stats-container {{ display: flex; justify-content: space-between; background-color: #f8f9fa; border-radius: 12px; padding: 25px 15px; }}
+            .card {{ background: white; width: 550px; max-width: 90vw; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); text-align: center; }}
+            .badge {{ background-color: #f5a623; color: white; padding: 6px 16px; border-radius: 20px; font-weight: bold; font-size: 12px; margin-bottom: 15px; display:inline-block; }}
+            .strategy-name {{ font-size: 26px; color: #333; margin-bottom: 8px; font-weight: 600; }}
+            .inception-date {{ font-size: 13px; color: #7f8c8d; margin-bottom: 30px; }}
+            .inception-date span {{ color: #2962ff; font-weight: 600; }}
+            .stats-container {{ display: flex; justify-content: space-between; background-color: #f8f9fa; border-radius: 12px; padding: 25px 15px; margin-bottom: 20px; }}
             .stat-box {{ text-align: center; flex: 1; border-right: 1px solid #e0e0e0; }}
             .stat-box:last-child {{ border-right: none; }}
             .stat-value {{ font-size: 22px; font-weight: 700; color: #2962ff; margin-bottom: 5px; }}
             .stat-label {{ font-size: 11px; color: #7f8c8d; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }}
-            .footer {{ margin-top: 30px; font-size: 12px; color: #bdc3c7; }}
-            .copy-btn {{ background-color: #2962ff; color: white; border: none; padding: 12px 30px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 25px; transition: opacity 0.2s; }}
+            .trades-section {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; padding: 25px; color: white; margin-bottom: 20px; }}
+            .trades-title {{ font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px; opacity: 0.9; font-weight: 600; }}
+            .trades-grid {{ display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }}
+            .trade-stat {{ background: rgba(255,255,255,0.15); padding: 15px; border-radius: 8px; backdrop-filter: blur(10px); }}
+            .trade-stat-value {{ font-size: 24px; font-weight: 700; margin-bottom: 5px; }}
+            .trade-stat-label {{ font-size: 11px; opacity: 0.9; text-transform: uppercase; letter-spacing: 0.5px; }}
+            .win-loss-row {{ display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-top: 15px; }}
+            .copy-btn {{ background-color: #2962ff; color: white; border: none; padding: 12px 30px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 10px; transition: opacity 0.2s; }}
             .copy-btn:hover {{ opacity: 0.9; }}
         </style>
     </head>
@@ -267,13 +318,48 @@ def index():
         <div class="card">
             <div class="badge">#1 Spotlight</div>
             <div class="strategy-name">{name}</div>
+            <div class="inception-date">Trading since <span>{inception_display}</span></div>
+
             <div class="stats-container">
                 <div class="stat-box"><div class="stat-value">{return_val:,.2f}%</div><div class="stat-label">Return</div></div>
-                <div class="stat-box"><div class="stat-value">{copiers}</div><div class="stat-label">Copiers</div></div>
-                <div class="stat-box"><div class="stat-value">Inception</div><div class="stat-label">Period</div></div>
+                <div class="stat-box"><div class="stat-value">{copiers:,}</div><div class="stat-label">Copiers</div></div>
+                <div class="stat-box"><div class="stat-value">{win_rate:.1f}%</div><div class="stat-label">Win Rate</div></div>
             </div>
-            <button class="copy-btn">Copy</button>
-            <p style="font-size: 10px; color: #95a5a6;"><a href="/logout">Logout</a></p>
+
+            <div class="trades-section">
+                <div class="trades-title">Trade Performance</div>
+                <div class="trades-grid">
+                    <div class="trade-stat">
+                        <div class="trade-stat-value">{total_trades:,}</div>
+                        <div class="trade-stat-label">Total Trades</div>
+                    </div>
+                    <div class="trade-stat">
+                        <div class="trade-stat-value">{min_per_month:,}</div>
+                        <div class="trade-stat-label">Min / Month</div>
+                    </div>
+                    <div class="trade-stat">
+                        <div class="trade-stat-value">{max_per_month:,}</div>
+                        <div class="trade-stat-label">Max / Month</div>
+                    </div>
+                </div>
+                <div class="win-loss-row">
+                    <div class="trade-stat">
+                        <div class="trade-stat-value">{wins:,}</div>
+                        <div class="trade-stat-label">Wins</div>
+                    </div>
+                    <div class="trade-stat">
+                        <div class="trade-stat-value">{losses:,}</div>
+                        <div class="trade-stat-label">Losses</div>
+                    </div>
+                    <div class="trade-stat">
+                        <div class="trade-stat-value">{win_rate:.1f}%</div>
+                        <div class="trade-stat-label">Win Rate</div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="copy-btn">Copy Strategy</button>
+            <p style="font-size: 10px; color: #95a5a6; margin-top: 20px;"><a href="/logout">Logout</a></p>
         </div>
     </body>
     </html>
