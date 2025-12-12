@@ -5,25 +5,20 @@
 
 /**
  * Handle account dropdown change event
- * Saves selected account to localStorage and shows/hides copy button
+ * Redirects to page with copier_id query parameter for server-side state management
  */
 function handleAccountChange() {
     const selector = document.getElementById('accountSelector');
     if (!selector) return;
 
-    const selectedOption = selector.options[selector.selectedIndex];
     const selectedAccountId = selector.value;
-    const accountType = selectedOption ? selectedOption.getAttribute('data-type') : null;
-    const copyBtns = document.querySelectorAll('.copy-btn');
 
     if (selectedAccountId) {
-        localStorage.setItem('selectedAccountId', selectedAccountId);
-        if (accountType) localStorage.setItem('selectedAccountType', accountType);
-        copyBtns.forEach(btn => btn.classList.remove('hidden'));
+        // Redirect with copier_id query parameter
+        window.location.href = '/?copier_id=' + encodeURIComponent(selectedAccountId);
     } else {
-        localStorage.removeItem('selectedAccountId');
-        localStorage.removeItem('selectedAccountType');
-        copyBtns.forEach(btn => btn.classList.add('hidden'));
+        // Clear selection - redirect without query param
+        window.location.href = '/';
     }
 }
 
@@ -80,6 +75,45 @@ function showTradesTab(which) {
         // Hide range selector and stats for open trades
         if (rangeSelector) rangeSelector.style.display = 'none';
         if (statsRow) statsRow.style.display = 'none';
+    }
+}
+
+/**
+ * Open the copy settings modal
+ */
+function openCopyModal() {
+    const modal = document.getElementById('copyModal');
+    if (modal) {
+        modal.style.display = 'block';
+        document.body.style.overflow = 'hidden'; // Prevent background scrolling
+    }
+}
+
+/**
+ * Close the copy settings modal
+ */
+function closeCopyModal() {
+    const modal = document.getElementById('copyModal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = ''; // Restore scrolling
+    }
+}
+
+/**
+ * Update the trade size label based on selected trade size type
+ */
+function updateTradeSizeLabel() {
+    const typeSelect = document.getElementById('trade_size_type');
+    const label = document.getElementById('trade_size_label');
+
+    if (typeSelect && label) {
+        const selectedType = typeSelect.value;
+        if (selectedType === 'Fixed') {
+            label.textContent = 'Lot Size';
+        } else {
+            label.textContent = 'Multiplier';
+        }
     }
 }
 

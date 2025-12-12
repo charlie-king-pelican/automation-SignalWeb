@@ -649,3 +649,99 @@ def get_strategy_closed_signals(strategy_id, token, start_dt_iso, end_dt_iso):
         return []
     except Exception:
         return []
+
+
+def get_copy_settings(copier_id, strategy_id, token):
+    """
+    Get copy settings for a copier/strategy pair.
+
+    Args:
+        copier_id: Copier account ID
+        strategy_id: Strategy account ID
+        token: Access token for API authentication
+
+    Returns:
+        tuple: (copy_settings dict or None, status_code)
+               Returns (None, 404) if not copying
+               Returns (settings, 200) if copying
+               Returns (None, 0) on error
+    """
+    headers = {
+        'Authorization': f"Bearer {token}",
+        'Content-Type': 'application/json'
+    }
+
+    try:
+        resp = requests.get(
+            f"{API_BASE_URL}/api/copiers/{copier_id}/strategies/{strategy_id}/copy-settings",
+            headers=headers
+        )
+        if resp.status_code == 200:
+            return resp.json(), 200
+        elif resp.status_code == 404:
+            return None, 404
+        return None, resp.status_code
+    except Exception:
+        return None, 0
+
+
+def create_copy_settings(copier_id, strategy_id, token, settings):
+    """
+    Create copy settings (POST) for a copier/strategy pair.
+
+    Args:
+        copier_id: Copier account ID
+        strategy_id: Strategy account ID
+        token: Access token for API authentication
+        settings: Dict with tradeSizeType, tradeSizeValue, isOpenExistingTrades, isRoundUpToMinimumSize
+
+    Returns:
+        tuple: (success: bool, response_data or error_message)
+    """
+    headers = {
+        'Authorization': f"Bearer {token}",
+        'Content-Type': 'application/json'
+    }
+
+    try:
+        resp = requests.post(
+            f"{API_BASE_URL}/api/copiers/{copier_id}/strategies/{strategy_id}/copy-settings",
+            headers=headers,
+            json=settings
+        )
+        if resp.status_code in [200, 201]:
+            return True, resp.json()
+        return False, resp.text
+    except Exception as e:
+        return False, str(e)
+
+
+def update_copy_settings(copier_id, strategy_id, token, settings):
+    """
+    Update copy settings (PUT) for a copier/strategy pair.
+
+    Args:
+        copier_id: Copier account ID
+        strategy_id: Strategy account ID
+        token: Access token for API authentication
+        settings: Dict with tradeSizeType, tradeSizeValue, isOpenExistingTrades, isRoundUpToMinimumSize
+
+    Returns:
+        tuple: (success: bool, response_data or error_message)
+    """
+    headers = {
+        'Authorization': f"Bearer {token}",
+        'Content-Type': 'application/json'
+    }
+
+    try:
+        resp = requests.put(
+            f"{API_BASE_URL}/api/copiers/{copier_id}/strategies/{strategy_id}/copy-settings",
+            headers=headers,
+            json=settings
+        )
+        if resp.status_code == 200:
+            return True, resp.json()
+        return False, resp.text
+    except Exception as e:
+        return False, str(e)

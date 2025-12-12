@@ -29,9 +29,10 @@
             <div class="account-selector-wrapper">
                 <div class="account-selector-label">Account</div>
                 <select id="accountSelector" class="account-selector" onchange="handleAccountChange()">
-                    <option value="" disabled selected>Select account</option>
+                    <option value="" disabled {% if not selected_copier_id %}selected{% endif %}>Select account</option>
                     {% for acc in accounts_list %}
-                    <option value="{{ acc.id }}" data-type="{{ acc.type }}">
+                    <option value="{{ acc.id }}" data-type="{{ acc.type }}"
+                            {% if selected_copier_id and selected_copier_id == acc.id %}selected{% endif %}>
                         {{ acc.name }} • {{ acc.server }} • {{ acc.username }}
                     </option>
                     {% endfor %}
@@ -319,7 +320,13 @@
                 </div>
             </div>
 
-            <button class="copy-btn hidden">Copy Strategy</button>
+            <!-- Copy Strategy Button -->
+            {% if selected_copier_id and strategy_id %}
+                <button class="copy-btn" type="button" onclick="openCopyModal()">
+                    {% if is_copying %}Edit Copy{% else %}Copy Strategy{% endif %}
+                </button>
+            {% endif %}
+
             <p style="font-size: 10px; color: #95a5a6; margin-top: 20px;">
                 {% if strategy_id %}
                 <a href="/debug/api?strategy_id={{ strategy_id }}" style="color: #7f8c8d; text-decoration: none; margin-right: 15px;">Debug API</a> •
@@ -329,6 +336,67 @@
 
         </div> <!-- End content-sections -->
     </div> <!-- End card -->
+
+    <!-- Copy Settings Modal -->
+    <div id="copyModal" class="modal" style="display: none;">
+        <div class="modal-overlay" onclick="closeCopyModal()"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>{% if is_copying %}Edit Copy Settings{% else %}Copy Strategy{% endif %}</h2>
+                <button class="modal-close" type="button" onclick="closeCopyModal()">&times;</button>
+            </div>
+            <form method="POST" action="/copy-strategy">
+                <input type="hidden" name="copier_id" value="{{ selected_copier_id }}">
+                <input type="hidden" name="strategy_id" value="{{ strategy_id }}">
+
+                <div class="modal-body">
+                    <!-- Trade Size Type -->
+                    <div class="form-group">
+                        <label for="trade_size_type">Trade Sizing Type</label>
+                        <select id="trade_size_type" name="trade_size_type" class="form-control" onchange="updateTradeSizeLabel()" required>
+                            <option value="Fixed" {% if copy_settings and copy_settings.get('TradeSizeType') == 'Fixed' %}selected{% elif not copy_settings %}selected{% endif %}>Fixed</option>
+                            <option value="MirrorSize" {% if copy_settings and copy_settings.get('TradeSizeType') == 'MirrorSize' %}selected{% endif %}>Mirror Size</option>
+                            <option value="MirrorRiskByEquity" {% if copy_settings and copy_settings.get('TradeSizeType') == 'MirrorRiskByEquity' %}selected{% endif %}>Mirror Risk by Equity</option>
+                            <option value="MirrorRiskByBalance" {% if copy_settings and copy_settings.get('TradeSizeType') == 'MirrorRiskByBalance' %}selected{% endif %}>Mirror Risk by Balance</option>
+                        </select>
+                    </div>
+
+                    <!-- Trade Size Value -->
+                    <div class="form-group">
+                        <label for="trade_size_value" id="trade_size_label">
+                            {% if copy_settings and copy_settings.get('TradeSizeType') == 'Fixed' %}Lot Size{% else %}Multiplier{% endif %}
+                        </label>
+                        <input type="number" id="trade_size_value" name="trade_size_value" class="form-control"
+                               min="0.01" step="0.01"
+                               value="{{ copy_settings.get('TradeSizeValue', 1.0) if copy_settings else 1.0 }}" required>
+                    </div>
+
+                    <!-- Copy Existing Open Trades -->
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="is_open_existing"
+                                   {% if copy_settings and copy_settings.get('IsOpenExistingTrades') %}checked{% endif %}>
+                            Copy existing open trades
+                        </label>
+                    </div>
+
+                    <!-- Round Up to Minimum Size -->
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="is_round_up"
+                                   {% if copy_settings and copy_settings.get('IsRoundUpToMinimumSize') %}checked{% endif %}>
+                            Round up to minimum trade size
+                        </label>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="closeCopyModal()">Cancel</button>
+                    <button type="submit" class="btn-primary">{% if is_copying %}Update{% else %}Start Copying{% endif %}</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>

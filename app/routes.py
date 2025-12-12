@@ -77,6 +77,15 @@ def register_routes(app):
         closed_trades_range = request.args.get('range', '30d')  # Default: 30 days
         closed_trades_stats = {}
 
+        # Detect copy state if account is selected
+        selected_copier_id = request.args.get('copier_id')
+        is_copying = False
+        copy_settings = None
+
+        if selected_copier_id and strategy_id:
+            copy_settings, status_code = services.get_copy_settings(selected_copier_id, strategy_id, token)
+            is_copying = (status_code == 200 and copy_settings is not None)
+
         if strategy_id:
             from datetime import datetime, timedelta
 
@@ -123,6 +132,9 @@ def register_routes(app):
             closed_signals=closed_signals,
             closed_trades_range=closed_trades_range,
             closed_trades_stats=closed_trades_stats,
+            selected_copier_id=selected_copier_id,
+            is_copying=is_copying,
+            copy_settings=copy_settings,
             format_currency=services.format_currency
         ))
         return add_no_cache_headers(response)
@@ -204,3 +216,51 @@ def register_routes(app):
         logout_url = services.build_logout_url(redirect_uri)
 
         return redirect(logout_url)
+
+    @app.route('/copy-strategy', methods=['POST'])
+    def copy_strategy():
+        """Handle copy strategy form submission (create or update copy settings)."""
+        token = session.get('access_token')
+        if not token:
+            return redirect(url_for('index'))
+
+        # Get form data
+        copier_id = request.form.get('copier_id')
+        strategy_id = request.form.get('strategy_id')
+        trade_size_type = request.form.get('trade_size_type')
+        trade_size_value = request.form.get('trade_size_value')
+        is_open_existing = request.form.get('is_open_existing') == 'on'
+        is_round_up = request.form.get('is_round_up') == 'on'
+
+        # Validation
+        if not copier_id:
+            # TODO: Add flash message support
+            return redirect(url_for('index'))
+
+        if not strategy_id:
+            return redirect(url_for('index'))
+
+        # Build settings payload
+        settings = {
+            'tradeSizeType': trade_size_type,
+            'tradeSizeValue': float(trade_size_value) if trade_size_value else 1.0,
+            'isOpenExistingTrades': is_open_existing,
+            'isRoundUpToMinimumSize': is_round_up
+        }
+
+        # Detect if already copying (GET first)
+        copy_settings, status_code = services.get_copy_settings(copier_id, strategy_id, token)
+
+        if status_code == 200:
+            # Already copying - use PUT
+            success, result = services.update_copy_settings(copier_id, strategy_id, token, settings)
+        else:
+            # Not copying yet - use POST
+            success, result = services.create_copy_settings(copier_id, strategy_id, token, settings)
+
+        if success:
+            # Redirect back with copier_id to show updated state
+            return redirect(url_for('index', copier_id=copier_id))
+        else:
+            # TODO: Add flash message for error
+            return redirect(url_for('index', copier_id=copier_id))
