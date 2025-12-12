@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Accounts - Copy Trade Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+</head>
+<body class="accounts-page">
+    <div class="header">
+        <h1>{{ profile_name }}'s Accounts</h1>
+        <a href="/" class="back-link">← Back to Dashboard</a>
+    </div>
+    <div class="container">
+        {% if not copiers %}
+        <div class="no-data">No copier accounts found</div>
+        {% else %}
+        {% for copier in copiers %}
+        {% set balance = copier.stats.get('balance', 0) %}
+        {% set equity = copier.stats.get('equity', 0) %}
+        {% set leverage = copier.stats.get('leverage') %}
+        {% set return_pct = copier.stats.get('return_pct', 0) %}
+        {% set drawdown_pct = copier.stats.get('drawdown_pct', 0) %}
+        {% set currency = copier.stats.get('currency', 'USD') %}
+        {% set return_color = '#2e7d32' if return_pct >= 0 else '#c62828' %}
+
+        <div class="account-card">
+            <div class="account-info">
+                <div class="account-name">{{ copier.name }}</div>
+                <div class="account-details">
+                    <span>{{ copier.server }}</span>
+                    <span>#{{ copier.username }}</span>
+                    {% if leverage %}
+                    <span style="color: #7f8c8d; font-size: 12px;">1:{{ leverage }}</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="account-stats">
+                <div class="stat-row">
+                    <span class="stat-label">Balance</span>
+                    <span class="stat-value">{{ format_currency(balance, currency) }}</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Equity</span>
+                    <span class="stat-value">{{ format_currency(equity, currency) }}</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Return</span>
+                    <span class="stat-value" style="color: {{ return_color }};">{{ '%+.2f'|format(return_pct) }}%</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Max Drawdown (Equity)</span>
+                    <span class="stat-value" style="color: #c62828;">{{ '%.2f'|format(drawdown_pct) }}%</span>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        {% endif %}
+    </div>
+</body>
+</html>

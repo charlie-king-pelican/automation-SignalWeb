@@ -1,0 +1,726 @@
+/* Global Styles */
+body {
+    background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    position: relative;
+    padding: 20px;
+}
+
+/* Login Page Styles */
+.login-card {
+    background: white;
+    width: 400px;
+    padding: 50px 40px;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+    text-align: center;
+}
+
+.login-title {
+    font-size: 28px;
+    color: #333;
+    margin-bottom: 15px;
+    font-weight: 600;
+}
+
+.login-subtitle {
+    font-size: 14px;
+    color: #7f8c8d;
+    margin-bottom: 35px;
+}
+
+.logout-success {
+    background: #d4edda;
+    color: #155724;
+    padding: 12px 20px;
+    border-radius: 8px;
+    margin-bottom: 25px;
+    font-size: 14px;
+    border: 1px solid #c3e6cb;
+}
+
+.login-btn {
+    display: inline-block;
+    padding: 15px 40px;
+    background: #2962ff;
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 15px;
+    transition: opacity 0.2s;
+}
+
+.login-btn:hover {
+    opacity: 0.9;
+}
+
+/* Profile Info (Top Left) */
+.profile-info {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(10px);
+    padding: 12px 18px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    text-decoration: none;
+    display: block;
+    transition: all 0.2s;
+    border: 1px solid rgba(41,98,255,0.1);
+}
+
+.profile-info:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    cursor: pointer;
+}
+
+.profile-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 4px;
+}
+
+.profile-accounts {
+    font-size: 11px;
+    color: #7f8c8d;
+}
+
+.profile-accounts span {
+    color: #2962ff;
+    font-weight: 600;
+}
+
+/* Main Card */
+.card {
+    background: white;
+    width: 650px;
+    max-width: 95vw;
+    padding: 0;
+    border-radius: 24px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.12);
+    overflow: hidden;
+}
+
+/* Hero Section */
+.hero-section {
+    background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
+    padding: 50px 40px 40px;
+    border-bottom: 1px solid #e8ecf1;
+    position: relative;
+}
+
+.hero-section::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, #2962ff 50%, transparent 100%);
+    opacity: 0.3;
+}
+
+.badge {
+    background: linear-gradient(135deg, #f5a623 0%, #f76b1c 100%);
+    color: white;
+    padding: 8px 20px;
+    border-radius: 24px;
+    font-weight: 700;
+    font-size: 11px;
+    margin-bottom: 20px;
+    display: inline-block;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    box-shadow: 0 4px 12px rgba(245,166,35,0.3);
+}
+
+.strategy-name {
+    font-size: 36px;
+    color: #1a1a1a;
+    margin-bottom: 12px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    line-height: 1.2;
+}
+
+.inception-date {
+    font-size: 14px;
+    color: #6c757d;
+    margin-bottom: 35px;
+    font-weight: 500;
+}
+
+.inception-date span {
+    color: #2962ff;
+    font-weight: 700;
+}
+
+/* Account Selector */
+.account-selector-wrapper {
+    margin-bottom: 25px;
+}
+
+.account-selector-label {
+    font-size: 11px;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.account-selector {
+    width: 100%;
+    padding: 14px 18px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #1a1a1a;
+    background: white;
+    border: 2px solid #e8ecf1;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%232962ff' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 18px center;
+    padding-right: 45px;
+}
+
+.account-selector:hover {
+    border-color: #2962ff;
+    box-shadow: 0 4px 12px rgba(41,98,255,0.1);
+}
+
+.account-selector:focus {
+    outline: none;
+    border-color: #2962ff;
+    box-shadow: 0 0 0 3px rgba(41,98,255,0.1);
+}
+
+.account-selector option {
+    padding: 10px;
+}
+
+/* Main Performance Stats */
+.stats-container {
+    display: flex;
+    justify-content: space-between;
+    background: white;
+    border-radius: 16px;
+    padding: 28px 20px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.04);
+    border: 1px solid rgba(0,0,0,0.04);
+}
+
+.stat-box {
+    text-align: center;
+    flex: 1;
+    border-right: 1px solid #e8ecf1;
+    padding: 0 15px;
+}
+
+.stat-box:last-child {
+    border-right: none;
+}
+
+.stat-value {
+    font-size: 28px;
+    font-weight: 800;
+    color: #2962ff;
+    margin-bottom: 8px;
+    letter-spacing: -0.5px;
+}
+
+.stat-label {
+    font-size: 10px;
+    color: #8492a6;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 700;
+}
+
+/* Page Tabs (Overview / Trades) */
+.page-tabs {
+    display: flex;
+    gap: 10px;
+    margin: 18px 0 0;
+}
+
+.page-tab-btn {
+    border: 2px solid #e8ecf1;
+    background: #fff;
+    color: #1a1a1a;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.page-tab-btn:hover {
+    border-color: #2962ff;
+    box-shadow: 0 4px 12px rgba(41,98,255,0.1);
+}
+
+.page-tab-btn.active {
+    background: #2962ff;
+    color: #fff;
+    border-color: #2962ff;
+}
+
+.page-section {
+    display: none;
+}
+
+.page-section.active {
+    display: block;
+}
+
+/* Content Sections */
+.content-sections {
+    padding: 30px 40px 40px;
+}
+
+.section-title {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 20px;
+    opacity: 0.9;
+    font-weight: 600;
+}
+
+/* Trade Performance Section */
+.trades-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px;
+    padding: 25px;
+    color: white;
+    margin-bottom: 15px;
+}
+
+.trades-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+.trade-stat {
+    background: rgba(255,255,255,0.15);
+    padding: 15px;
+    border-radius: 8px;
+    backdrop-filter: blur(10px);
+}
+
+.trade-stat-value {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+.trade-stat-label {
+    font-size: 10px;
+    opacity: 0.9;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.win-loss-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+    margin-top: 12px;
+}
+
+/* Profitability & Risk Section */
+.profitability-section {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    border-radius: 12px;
+    padding: 25px;
+    color: white;
+    margin-bottom: 15px;
+}
+
+.profit-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+.profit-stat {
+    background: rgba(255,255,255,0.15);
+    padding: 15px;
+    border-radius: 8px;
+    backdrop-filter: blur(10px);
+}
+
+.profit-stat-value {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+.profit-stat-label {
+    font-size: 10px;
+    opacity: 0.9;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.negative {
+    color: #ff6b6b;
+}
+
+/* Account Status Section */
+.account-section {
+    background: linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%);
+    border-radius: 12px;
+    padding: 25px;
+    color: white;
+    margin-bottom: 15px;
+}
+
+.account-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+.account-stat {
+    background: rgba(255,255,255,0.15);
+    padding: 15px;
+    border-radius: 8px;
+    backdrop-filter: blur(10px);
+}
+
+.account-stat-value {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+.account-stat-label {
+    font-size: 10px;
+    opacity: 0.9;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Copiers Performance Section */
+.copiers-section {
+    background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%);
+    border-radius: 12px;
+    padding: 25px;
+    color: white;
+    margin-bottom: 20px;
+}
+
+.copiers-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+.copier-stat {
+    background: rgba(255,255,255,0.15);
+    padding: 15px;
+    border-radius: 8px;
+    backdrop-filter: blur(10px);
+}
+
+.copier-stat-value {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+.copier-stat-label {
+    font-size: 10px;
+    opacity: 0.9;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Trades Tabs + Table */
+.trades-tabs {
+    display: flex;
+    gap: 10px;
+    margin: 10px 0 18px;
+}
+
+.tab-btn {
+    border: 2px solid #e8ecf1;
+    background: #fff;
+    color: #1a1a1a;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.tab-btn:hover {
+    border-color: #2962ff;
+    box-shadow: 0 4px 12px rgba(41,98,255,0.1);
+}
+
+.tab-btn.active {
+    background: #2962ff;
+    color: #fff;
+    border-color: #2962ff;
+}
+
+.trades-panel {
+    display: none;
+    background: #fff;
+    border: 1px solid #e8ecf1;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+}
+
+.trades-panel.active {
+    display: block;
+}
+
+.trades-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.trades-table th {
+    text-align: left;
+    padding: 12px 14px;
+    background: #f7f9fb;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    font-weight: 800;
+    border-bottom: 1px solid #e8ecf1;
+}
+
+.trades-table td {
+    padding: 12px 14px;
+    border-bottom: 1px solid #eef2f6;
+    color: #1a1a1a;
+}
+
+.trades-table tr:last-child td {
+    border-bottom: none;
+}
+
+.pill {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-weight: 800;
+    font-size: 11px;
+    border: 1px solid rgba(0,0,0,0.08);
+}
+
+.pill.buy {
+    background: rgba(56,239,125,0.18);
+    color: #0f5132;
+    border-color: rgba(15,81,50,0.2);
+}
+
+.pill.sell {
+    background: rgba(255,107,107,0.18);
+    color: #842029;
+    border-color: rgba(132,32,41,0.2);
+}
+
+.muted {
+    color: #6c757d;
+}
+
+/* Copy Strategy Button */
+.copy-btn {
+    background-color: #2962ff;
+    color: white;
+    border: none;
+    padding: 14px 40px;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 4px 15px rgba(41, 98, 255, 0.3);
+}
+
+.copy-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(41, 98, 255, 0.4);
+}
+
+.copy-btn.hidden {
+    display: none;
+}
+
+/* Strategy Warning */
+.strategy-warning {
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin-top: 15px;
+    display: none;
+    align-items: center;
+    gap: 10px;
+}
+
+.strategy-warning-icon {
+    color: #ff9800;
+    font-size: 20px;
+}
+
+.strategy-warning-text {
+    color: #856404;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.5;
+}
+
+/* Accounts Page Styles */
+body.accounts-page {
+    background-color: #f4f6f8;
+    padding: 40px;
+    display: block;
+    min-height: auto;
+}
+
+.header {
+    max-width: 1000px;
+    margin: 0 auto 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.header h1 {
+    font-size: 28px;
+    color: #333;
+    margin: 0;
+}
+
+.back-link {
+    color: #2962ff;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.back-link:hover {
+    text-decoration: underline;
+}
+
+.container {
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.account-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px 25px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.account-info {
+    flex: 1;
+}
+
+.account-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 5px;
+}
+
+.account-details {
+    font-size: 13px;
+    color: #7f8c8d;
+}
+
+.account-details span {
+    margin-right: 15px;
+}
+
+.account-stats {
+    text-align: right;
+}
+
+.stat-row {
+    margin-bottom: 5px;
+}
+
+.no-data {
+    text-align: center;
+    padding: 60px 20px;
+    color: #7f8c8d;
+}
+
+/* Debug Page Styles */
+body.debug-page {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    padding: 40px;
+    background: #f5f5f5;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+
+.debug-container {
+    background: white;
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    text-align: center;
+    max-width: 500px;
+}
+
+.debug-container h2 {
+    color: #333;
+    margin-bottom: 10px;
+}
+
+.debug-container p {
+    color: #7f8c8d;
+    margin-bottom: 30px;
+}
+
+.debug-container a {
+    color: #2962ff;
+    text-decoration: none;
+    font-weight: 600;
+    padding: 12px 30px;
+    background: #f0f5ff;
+    border-radius: 8px;
+    display: inline-block;
+    transition: background 0.2s;
+}
+
+.debug-container a:hover {
+    background: #e3edff;
+}
