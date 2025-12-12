@@ -96,13 +96,8 @@ def render_account_selector(accounts):
         label = f"{acc.get('name')} • {acc.get('server')} • {acc.get('username')}"
         acc_id = acc.get('id')
         acc_type = acc.get('type', 'copier')
-
-        is_enabled = acc.get('enabled', True)
-        disabled_attr = "" if is_enabled else " disabled"
-        disabled_suffix = "" if is_enabled else " (disabled)"
-
         options.append(
-            f"<option value='{acc_id}' data-type='{acc_type}'{disabled_attr}>{label}{disabled_suffix}</option>"
+            f"<option value='{acc_id}' data-type='{acc_type}'>{label}</option>"
         )
 
     return f"""
