@@ -5,7 +5,7 @@ import hashlib
 import base64
 import json
 from datetime import timedelta
-from flask import Flask, redirect, request, url_for, session 
+from flask import Flask, redirect, request, url_for, session, make_response 
 
 # ==========================================
 # CONFIGURATION
@@ -37,6 +37,13 @@ def generate_pkce():
     m.update(verifier.encode('ascii'))
     challenge = base64.urlsafe_b64encode(m.digest()).decode('ascii').replace('=', '')
     return verifier, challenge
+
+def add_no_cache_headers(response):
+    """Add headers to prevent browser caching of authenticated pages"""
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '-1'
+    return response
 
 def get_profile_info(token):
     """Fetch profile information including name and account counts"""
@@ -115,13 +122,19 @@ def index():
     token = session.get('access_token') 
     
     if not token:
+        # Check if user just logged out
+        logged_out = request.args.get('logged_out')
+        logout_message = ''
+        if logged_out:
+            logout_message = '<div class="logout-success">✓ You have been logged out successfully</div>'
+
         # If no token, show login page
-        return '''
+        return f'''
         <!DOCTYPE html>
         <html>
         <head>
             <style>
-                body {
+                body {{
                     background-color: #f4f6f8;
                     font-family: sans-serif;
                     display: flex;
@@ -129,27 +142,36 @@ def index():
                     align-items: center;
                     height: 100vh;
                     margin: 0;
-                }
-                .login-card {
+                }}
+                .login-card {{
                     background: white;
                     width: 400px;
                     padding: 50px 40px;
                     border-radius: 20px;
                     box-shadow: 0 10px 30px rgba(0,0,0,0.05);
                     text-align: center;
-                }
-                .login-title {
+                }}
+                .login-title {{
                     font-size: 28px;
                     color: #333;
                     margin-bottom: 15px;
                     font-weight: 600;
-                }
-                .login-subtitle {
+                }}
+                .login-subtitle {{
                     font-size: 14px;
                     color: #7f8c8d;
                     margin-bottom: 35px;
-                }
-                .login-btn {
+                }}
+                .logout-success {{
+                    background: #d4edda;
+                    color: #155724;
+                    padding: 12px 20px;
+                    border-radius: 8px;
+                    margin-bottom: 25px;
+                    font-size: 14px;
+                    border: 1px solid #c3e6cb;
+                }}
+                .login-btn {{
                     display: inline-block;
                     padding: 15px 40px;
                     background: #2962ff;
@@ -159,14 +181,15 @@ def index():
                     font-weight: 600;
                     font-size: 15px;
                     transition: opacity 0.2s;
-                }
-                .login-btn:hover {
+                }}
+                .login-btn:hover {{
                     opacity: 0.9;
-                }
+                }}
             </style>
         </head>
         <body>
             <div class="login-card">
+                {logout_message}
                 <div class="login-title">Welcome</div>
                 <div class="login-subtitle">Sign in to access your trading accounts</div>
                 <a href="/login" class="login-btn">Login with Pepperstone</a>
@@ -255,7 +278,8 @@ def index():
     </body>
     </html>
     '''
-    return html
+    response = make_response(html)
+    return add_no_cache_headers(response)
 
 @app.route('/accounts')
 def accounts():
@@ -421,7 +445,8 @@ def accounts():
         </html>
         '''
 
-        return accounts_html
+        response = make_response(accounts_html)
+        return add_no_cache_headers(response)
 
     except Exception as e:
         return f"Error: {e}", 500
@@ -445,7 +470,7 @@ def login():
 
 @app.route('/debug/api')
 def debug_api():
-    """Temporary debug route to inspect API responses"""
+    """Comprehensive debug route to inspect all available API data"""
     token = session.get('access_token')
     if not token:
         return """
@@ -468,49 +493,151 @@ def debug_api():
     try:
         resp = requests.get(f"{IDENTITY_URL}/connect/userinfo", headers=headers)
         if resp.status_code == 200:
-            results['userinfo'] = {'status': resp.status_code, 'data': resp.json()}
+            results['1_userinfo'] = {'status': resp.status_code, 'data': resp.json()}
         else:
-            results['userinfo'] = {'status': resp.status_code, 'error': resp.text}
+            results['1_userinfo'] = {'status': resp.status_code, 'error': resp.text}
     except Exception as e:
-        results['userinfo'] = {'error': str(e)}
+        results['1_userinfo'] = {'error': str(e)}
 
-    # 2. Try to get profile ID from userinfo and fetch profile details
-    if 'userinfo' in results and results['userinfo'].get('status') == 200:
-        userinfo = results['userinfo']['data']
-        # Profile ID is in the custom claim 'https://copy-trade.io/profile'
+    # 2. Get profile ID and profile details
+    if '1_userinfo' in results and results['1_userinfo'].get('status') == 200:
+        userinfo = results['1_userinfo']['data']
         profile_id = userinfo.get('https://copy-trade.io/profile')
 
         results['detected_profile_id'] = profile_id
 
         if profile_id:
+            # Profile details
             try:
                 resp = requests.get(f"{API_BASE_URL}/api/profiles/{profile_id}", headers=headers)
                 if resp.status_code == 200:
-                    results['profile'] = {'status': resp.status_code, 'data': resp.json()}
+                    results['2_profile'] = {'status': resp.status_code, 'data': resp.json()}
                 else:
-                    results['profile'] = {'status': resp.status_code, 'error': resp.text}
+                    results['2_profile'] = {'status': resp.status_code, 'error': resp.text}
             except Exception as e:
-                results['profile'] = {'error': str(e)}
+                results['2_profile'] = {'error': str(e)}
 
-            # 3. Get strategies
+            # Get strategies
             try:
                 resp = requests.get(f"{API_BASE_URL}/api/profiles/{profile_id}/strategies", headers=headers)
                 if resp.status_code == 200:
-                    results['strategies'] = {'status': resp.status_code, 'count': len(resp.json()), 'data': resp.json()}
-                else:
-                    results['strategies'] = {'status': resp.status_code, 'error': resp.text}
-            except Exception as e:
-                results['strategies'] = {'error': str(e)}
+                    strategies_data = resp.json()
+                    results['3_strategies'] = {'status': resp.status_code, 'count': len(strategies_data), 'data': strategies_data}
 
-            # 4. Get copiers
+                    # Get detailed stats for first strategy
+                    if strategies_data and len(strategies_data) > 0:
+                        first_strategy_id = strategies_data[0].get('Id')
+                        if first_strategy_id:
+                            # Strategy stats
+                            try:
+                                resp = requests.get(f"{API_BASE_URL}/api/strategies/{first_strategy_id}/stats",
+                                                  headers=headers,
+                                                  params={'wl': WHITE_LABEL_ID})
+                                if resp.status_code == 200:
+                                    results['4_strategy_stats_detailed'] = {'status': resp.status_code, 'strategy_id': first_strategy_id, 'data': resp.json()}
+                            except Exception as e:
+                                results['4_strategy_stats_detailed'] = {'error': str(e)}
+
+                            # Open signals for strategy
+                            try:
+                                resp = requests.get(f"{API_BASE_URL}/api/strategies/{first_strategy_id}/signals/open", headers=headers)
+                                if resp.status_code == 200:
+                                    results['5_strategy_open_signals'] = {'status': resp.status_code, 'strategy_id': first_strategy_id, 'count': len(resp.json()), 'data': resp.json()}
+                            except Exception as e:
+                                results['5_strategy_open_signals'] = {'error': str(e)}
+
+                            # Closed signals for strategy (last 30 days)
+                            try:
+                                from datetime import datetime, timedelta
+                                end_date = datetime.now()
+                                start_date = end_date - timedelta(days=30)
+                                resp = requests.get(f"{API_BASE_URL}/api/strategies/{first_strategy_id}/signals/closed",
+                                                  headers=headers,
+                                                  params={
+                                                      'startDate': start_date.isoformat(),
+                                                      'endDate': end_date.isoformat()
+                                                  })
+                                if resp.status_code == 200:
+                                    results['6_strategy_closed_signals'] = {'status': resp.status_code, 'strategy_id': first_strategy_id, 'count': len(resp.json()), 'data': resp.json()[:5]}  # First 5 only
+                            except Exception as e:
+                                results['6_strategy_closed_signals'] = {'error': str(e)}
+                else:
+                    results['3_strategies'] = {'status': resp.status_code, 'error': resp.text}
+            except Exception as e:
+                results['3_strategies'] = {'error': str(e)}
+
+            # Get copiers
             try:
                 resp = requests.get(f"{API_BASE_URL}/api/profiles/{profile_id}/copiers", headers=headers)
                 if resp.status_code == 200:
-                    results['copiers'] = {'status': resp.status_code, 'count': len(resp.json()), 'data': resp.json()}
+                    copiers_data = resp.json()
+                    results['7_copiers'] = {'status': resp.status_code, 'count': len(copiers_data), 'data': copiers_data}
+
+                    # Get detailed stats for first copier
+                    if copiers_data and len(copiers_data) > 0:
+                        first_copier_id = copiers_data[0].get('Id')
+                        if first_copier_id:
+                            # Copier stats
+                            try:
+                                resp = requests.get(f"{API_BASE_URL}/api/copiers/{first_copier_id}/stats", headers=headers)
+                                if resp.status_code == 200:
+                                    results['8_copier_stats_detailed'] = {'status': resp.status_code, 'copier_id': first_copier_id, 'data': resp.json()}
+                            except Exception as e:
+                                results['8_copier_stats_detailed'] = {'error': str(e)}
+
+                            # Copier open signals
+                            try:
+                                resp = requests.get(f"{API_BASE_URL}/api/copiers/{first_copier_id}/signals/open", headers=headers)
+                                if resp.status_code == 200:
+                                    results['9_copier_open_signals'] = {'status': resp.status_code, 'copier_id': first_copier_id, 'count': len(resp.json()), 'data': resp.json()}
+                            except Exception as e:
+                                results['9_copier_open_signals'] = {'error': str(e)}
+
+                            # Copier strategies (what strategies is this copier following?)
+                            try:
+                                resp = requests.get(f"{API_BASE_URL}/api/copiers/{first_copier_id}/strategies", headers=headers)
+                                if resp.status_code == 200:
+                                    results['10_copier_strategies'] = {'status': resp.status_code, 'copier_id': first_copier_id, 'count': len(resp.json()), 'data': resp.json()}
+                            except Exception as e:
+                                results['10_copier_strategies'] = {'error': str(e)}
+
+                            # Missed signals
+                            try:
+                                resp = requests.get(f"{API_BASE_URL}/api/profiles/{profile_id}/copiers/{first_copier_id}/signals/missed", headers=headers)
+                                if resp.status_code == 200:
+                                    results['11_copier_missed_signals'] = {'status': resp.status_code, 'copier_id': first_copier_id, 'count': len(resp.json()), 'data': resp.json()}
+                            except Exception as e:
+                                results['11_copier_missed_signals'] = {'error': str(e)}
                 else:
-                    results['copiers'] = {'status': resp.status_code, 'error': resp.text}
+                    results['7_copiers'] = {'status': resp.status_code, 'error': resp.text}
             except Exception as e:
-                results['copiers'] = {'error': str(e)}
+                results['7_copiers'] = {'error': str(e)}
+
+            # Get discover/spotlight data
+            try:
+                resp = requests.get(f"{API_BASE_URL}/api/discover/Strategies",
+                                  headers=headers,
+                                  params={'wl': WHITE_LABEL_ID})
+                if resp.status_code == 200:
+                    discover_data = resp.json()
+                    results['12_discover_spotlight'] = {'status': resp.status_code, 'count': len(discover_data), 'data': discover_data[:3]}  # First 3 strategies
+
+                    # Get detailed stats for spotlight strategy
+                    if discover_data and len(discover_data) > 0:
+                        spotlight_strategy = discover_data[0].get('Strategy', {})
+                        spotlight_id = spotlight_strategy.get('Id')
+                        if spotlight_id:
+                            try:
+                                resp = requests.get(f"{API_BASE_URL}/api/strategies/{spotlight_id}/stats",
+                                                  headers=headers,
+                                                  params={'wl': WHITE_LABEL_ID})
+                                if resp.status_code == 200:
+                                    results['13_spotlight_strategy_stats'] = {'status': resp.status_code, 'strategy_id': spotlight_id, 'data': resp.json()}
+                            except Exception as e:
+                                results['13_spotlight_strategy_stats'] = {'error': str(e)}
+            except Exception as e:
+                results['12_discover_spotlight'] = {'error': str(e)}
+
         else:
             results['error'] = 'Could not find profile_id in userinfo response'
 
@@ -519,13 +646,16 @@ def debug_api():
     <head>
         <style>
             body {{ font-family: monospace; padding: 20px; background: #f5f5f5; }}
-            pre {{ background: white; padding: 20px; border-radius: 5px; overflow-x: auto; }}
+            pre {{ background: white; padding: 20px; border-radius: 5px; overflow-x: auto; font-size: 12px; }}
             h2 {{ color: #2962ff; }}
+            .section {{ margin-bottom: 30px; }}
+            .endpoint {{ color: #666; font-size: 14px; margin-bottom: 10px; }}
         </style>
     </head>
     <body>
-        <h2>🔍 API Debug Output</h2>
+        <h2>🔍 Comprehensive API Debug Output</h2>
         <a href="/">← Back to Home</a>
+        <div class="endpoint">This page shows all available API data including strategy stats, signals, and copier information</div>
         <pre>{json.dumps(results, indent=2, default=str)}</pre>
     </body>
     </html>
@@ -537,8 +667,8 @@ def logout():
     session.pop('access_token', None)
     session.clear()
 
-    # Redirect to Pepperstone's logout endpoint to clear their session
-    logout_url = f"{IDENTITY_URL}/connect/endsession?post_logout_redirect_uri={REDIRECT_URI}"
+    # Full logout: clears both app session AND identity provider session
+    logout_url = f"{IDENTITY_URL}/connect/endsession?post_logout_redirect_uri={REDIRECT_URI}?logged_out=1"
     return redirect(logout_url)
 
 if __name__ == "__main__":
