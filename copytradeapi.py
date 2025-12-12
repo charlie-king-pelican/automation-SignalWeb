@@ -683,7 +683,7 @@ def login():
 
 @app.route('/debug/api')
 def debug_api():
-    """Comprehensive debug route to inspect all available API data"""
+    """Streamlined debug route focused on strategy data and fees"""
     token = session.get('access_token')
     if not token:
         return """
@@ -702,173 +702,114 @@ def debug_api():
 
     results = {}
 
-    # 1. Get userinfo
+    # Get discover/spotlight data with detailed fee information
     try:
-        resp = requests.get(f"{IDENTITY_URL}/connect/userinfo", headers=headers)
+        resp = requests.get(f"{API_BASE_URL}/api/discover/Strategies",
+                          headers=headers,
+                          params={'wl': WHITE_LABEL_ID})
         if resp.status_code == 200:
-            results['1_userinfo'] = {'status': resp.status_code, 'data': resp.json()}
+            discover_data = resp.json()
+
+            if discover_data and len(discover_data) > 0:
+                # Get the spotlight strategy (first one)
+                spotlight_item = discover_data[0]
+                spotlight_strategy = spotlight_item.get('Strategy', {})
+                spotlight_id = spotlight_strategy.get('Id')
+
+                # Extract ALL fields from the strategy object for debugging
+                results['1_spotlight_strategy_raw'] = {
+                    'status': 200,
+                    'strategy_id': spotlight_id,
+                    'full_strategy_object': spotlight_strategy,
+                    'full_discover_item': spotlight_item
+                }
+
+                # Specifically check Fee field (with different case variations)
+                fee_debug = {
+                    'Fee_field': spotlight_strategy.get('Fee'),
+                    'fee_field_lowercase': spotlight_strategy.get('fee'),
+                    'Fee_type': type(spotlight_strategy.get('Fee')).__name__,
+                    'Fee_is_none': spotlight_strategy.get('Fee') is None,
+                    'Fee_value_raw': repr(spotlight_strategy.get('Fee')),
+                    'all_strategy_keys': list(spotlight_strategy.keys())
+                }
+                results['2_fee_debugging'] = fee_debug
+
+                # Get detailed strategy info
+                if spotlight_id:
+                    try:
+                        resp = requests.get(f"{API_BASE_URL}/api/strategies/{spotlight_id}",
+                                          headers=headers)
+                        if resp.status_code == 200:
+                            strategy_detail = resp.json()
+                            results['3_strategy_detail'] = {
+                                'status': 200,
+                                'data': strategy_detail,
+                                'fee_from_detail': strategy_detail.get('Fee'),
+                                'fee_from_detail_type': type(strategy_detail.get('Fee')).__name__
+                            }
+                    except Exception as e:
+                        results['3_strategy_detail'] = {'error': str(e)}
+
+                    # Get stats
+                    try:
+                        resp = requests.get(f"{API_BASE_URL}/api/strategies/{spotlight_id}/stats",
+                                          headers=headers,
+                                          params={'wl': WHITE_LABEL_ID})
+                        if resp.status_code == 200:
+                            results['4_strategy_stats'] = {
+                                'status': 200,
+                                'strategy_id': spotlight_id,
+                                'data': resp.json()
+                            }
+                    except Exception as e:
+                        results['4_strategy_stats'] = {'error': str(e)}
+
+                    # Test strategy image endpoints
+                    try:
+                        image_urls_tested = {}
+                        test_urls = [
+                            f"{API_BASE_URL}/api/strategies/{spotlight_id}/image",
+                            f"https://cdn.copy-trade.io/strategies/{spotlight_id}.jpg",
+                            f"https://cdn.copy-trade.io/strategies/{spotlight_id}/image.jpg",
+                        ]
+                        for url in test_urls:
+                            try:
+                                resp = requests.head(url, headers=headers, timeout=2)
+                                image_urls_tested[url] = resp.status_code
+                            except:
+                                image_urls_tested[url] = 'timeout/error'
+                        results['5_image_url_tests'] = {
+                            'tested_urls': image_urls_tested,
+                            'imageUploaded_timestamp': spotlight_strategy.get('ImageUploaded')
+                        }
+                    except Exception as e:
+                        results['5_image_url_tests'] = {'error': str(e)}
         else:
-            results['1_userinfo'] = {'status': resp.status_code, 'error': resp.text}
+            results['1_spotlight_strategy_raw'] = {'status': resp.status_code, 'error': resp.text}
     except Exception as e:
-        results['1_userinfo'] = {'error': str(e)}
-
-    # 2. Get profile ID and profile details
-    if '1_userinfo' in results and results['1_userinfo'].get('status') == 200:
-        userinfo = results['1_userinfo']['data']
-        profile_id = userinfo.get('https://copy-trade.io/profile')
-
-        results['detected_profile_id'] = profile_id
-
-        if profile_id:
-            # Profile details
-            try:
-                resp = requests.get(f"{API_BASE_URL}/api/profiles/{profile_id}", headers=headers)
-                if resp.status_code == 200:
-                    results['2_profile'] = {'status': resp.status_code, 'data': resp.json()}
-                else:
-                    results['2_profile'] = {'status': resp.status_code, 'error': resp.text}
-            except Exception as e:
-                results['2_profile'] = {'error': str(e)}
-
-            # Get strategies
-            try:
-                resp = requests.get(f"{API_BASE_URL}/api/profiles/{profile_id}/strategies", headers=headers)
-                if resp.status_code == 200:
-                    strategies_data = resp.json()
-                    results['3_strategies'] = {'status': resp.status_code, 'count': len(strategies_data), 'data': strategies_data}
-
-                    # Get detailed stats for first strategy
-                    if strategies_data and len(strategies_data) > 0:
-                        first_strategy_id = strategies_data[0].get('Id')
-                        if first_strategy_id:
-                            # Strategy stats
-                            try:
-                                resp = requests.get(f"{API_BASE_URL}/api/strategies/{first_strategy_id}/stats",
-                                                  headers=headers,
-                                                  params={'wl': WHITE_LABEL_ID})
-                                if resp.status_code == 200:
-                                    results['4_strategy_stats_detailed'] = {'status': resp.status_code, 'strategy_id': first_strategy_id, 'data': resp.json()}
-                            except Exception as e:
-                                results['4_strategy_stats_detailed'] = {'error': str(e)}
-
-                            # Open signals for strategy
-                            try:
-                                resp = requests.get(f"{API_BASE_URL}/api/strategies/{first_strategy_id}/signals/open", headers=headers)
-                                if resp.status_code == 200:
-                                    results['5_strategy_open_signals'] = {'status': resp.status_code, 'strategy_id': first_strategy_id, 'count': len(resp.json()), 'data': resp.json()}
-                            except Exception as e:
-                                results['5_strategy_open_signals'] = {'error': str(e)}
-
-                            # Closed signals for strategy (last 30 days)
-                            try:
-                                from datetime import datetime, timedelta
-                                end_date = datetime.now()
-                                start_date = end_date - timedelta(days=30)
-                                resp = requests.get(f"{API_BASE_URL}/api/strategies/{first_strategy_id}/signals/closed",
-                                                  headers=headers,
-                                                  params={
-                                                      'startDate': start_date.isoformat(),
-                                                      'endDate': end_date.isoformat()
-                                                  })
-                                if resp.status_code == 200:
-                                    results['6_strategy_closed_signals'] = {'status': resp.status_code, 'strategy_id': first_strategy_id, 'count': len(resp.json()), 'data': resp.json()[:5]}  # First 5 only
-                            except Exception as e:
-                                results['6_strategy_closed_signals'] = {'error': str(e)}
-                else:
-                    results['3_strategies'] = {'status': resp.status_code, 'error': resp.text}
-            except Exception as e:
-                results['3_strategies'] = {'error': str(e)}
-
-            # Get copiers
-            try:
-                resp = requests.get(f"{API_BASE_URL}/api/profiles/{profile_id}/copiers", headers=headers)
-                if resp.status_code == 200:
-                    copiers_data = resp.json()
-                    results['7_copiers'] = {'status': resp.status_code, 'count': len(copiers_data), 'data': copiers_data}
-
-                    # Get detailed stats for first copier
-                    if copiers_data and len(copiers_data) > 0:
-                        first_copier_id = copiers_data[0].get('Id')
-                        if first_copier_id:
-                            # Copier stats
-                            try:
-                                resp = requests.get(f"{API_BASE_URL}/api/copiers/{first_copier_id}/stats", headers=headers)
-                                if resp.status_code == 200:
-                                    results['8_copier_stats_detailed'] = {'status': resp.status_code, 'copier_id': first_copier_id, 'data': resp.json()}
-                            except Exception as e:
-                                results['8_copier_stats_detailed'] = {'error': str(e)}
-
-                            # Copier open signals
-                            try:
-                                resp = requests.get(f"{API_BASE_URL}/api/copiers/{first_copier_id}/signals/open", headers=headers)
-                                if resp.status_code == 200:
-                                    results['9_copier_open_signals'] = {'status': resp.status_code, 'copier_id': first_copier_id, 'count': len(resp.json()), 'data': resp.json()}
-                            except Exception as e:
-                                results['9_copier_open_signals'] = {'error': str(e)}
-
-                            # Copier strategies (what strategies is this copier following?)
-                            try:
-                                resp = requests.get(f"{API_BASE_URL}/api/copiers/{first_copier_id}/strategies", headers=headers)
-                                if resp.status_code == 200:
-                                    results['10_copier_strategies'] = {'status': resp.status_code, 'copier_id': first_copier_id, 'count': len(resp.json()), 'data': resp.json()}
-                            except Exception as e:
-                                results['10_copier_strategies'] = {'error': str(e)}
-
-                            # Missed signals
-                            try:
-                                resp = requests.get(f"{API_BASE_URL}/api/profiles/{profile_id}/copiers/{first_copier_id}/signals/missed", headers=headers)
-                                if resp.status_code == 200:
-                                    results['11_copier_missed_signals'] = {'status': resp.status_code, 'copier_id': first_copier_id, 'count': len(resp.json()), 'data': resp.json()}
-                            except Exception as e:
-                                results['11_copier_missed_signals'] = {'error': str(e)}
-                else:
-                    results['7_copiers'] = {'status': resp.status_code, 'error': resp.text}
-            except Exception as e:
-                results['7_copiers'] = {'error': str(e)}
-
-            # Get discover/spotlight data
-            try:
-                resp = requests.get(f"{API_BASE_URL}/api/discover/Strategies",
-                                  headers=headers,
-                                  params={'wl': WHITE_LABEL_ID})
-                if resp.status_code == 200:
-                    discover_data = resp.json()
-                    results['12_discover_spotlight'] = {'status': resp.status_code, 'count': len(discover_data), 'data': discover_data[:3]}  # First 3 strategies
-
-                    # Get detailed stats for spotlight strategy
-                    if discover_data and len(discover_data) > 0:
-                        spotlight_strategy = discover_data[0].get('Strategy', {})
-                        spotlight_id = spotlight_strategy.get('Id')
-                        if spotlight_id:
-                            try:
-                                resp = requests.get(f"{API_BASE_URL}/api/strategies/{spotlight_id}/stats",
-                                                  headers=headers,
-                                                  params={'wl': WHITE_LABEL_ID})
-                                if resp.status_code == 200:
-                                    results['13_spotlight_strategy_stats'] = {'status': resp.status_code, 'strategy_id': spotlight_id, 'data': resp.json()}
-                            except Exception as e:
-                                results['13_spotlight_strategy_stats'] = {'error': str(e)}
-            except Exception as e:
-                results['12_discover_spotlight'] = {'error': str(e)}
-
-        else:
-            results['error'] = 'Could not find profile_id in userinfo response'
+        results['error'] = str(e)
 
     return f"""
     <html>
     <head>
         <style>
             body {{ font-family: monospace; padding: 20px; background: #f5f5f5; }}
-            pre {{ background: white; padding: 20px; border-radius: 5px; overflow-x: auto; font-size: 12px; }}
+            pre {{ background: white; padding: 20px; border-radius: 5px; overflow-x: auto; font-size: 12px; line-height: 1.6; }}
             h2 {{ color: #2962ff; }}
-            .section {{ margin-bottom: 30px; }}
-            .endpoint {{ color: #666; font-size: 14px; margin-bottom: 10px; }}
+            .highlight {{ background: #fff3cd; padding: 2px 5px; border-radius: 3px; }}
+            .section {{ margin-bottom: 20px; }}
+            a {{ color: #2962ff; text-decoration: none; font-weight: bold; }}
+            a:hover {{ text-decoration: underline; }}
         </style>
     </head>
     <body>
-        <h2>🔍 Comprehensive API Debug Output</h2>
+        <h2>🔍 Strategy Debug - Fee & Image Data</h2>
         <a href="/">← Back to Home</a>
-        <div class="endpoint">This page shows all available API data including strategy stats, signals, and copier information</div>
+        <div class="section">
+            <p><strong>Focus:</strong> Performance Fee debugging and Image URL testing</p>
+            <p><span class="highlight">Look at section "2_fee_debugging"</span> to see Fee field values</p>
+        </div>
         <pre>{json.dumps(results, indent=2, default=str)}</pre>
     </body>
     </html>
