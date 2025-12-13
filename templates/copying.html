@@ -9,7 +9,11 @@
 <body class="copying-page">
     <!-- Navigation -->
     <div class="page-nav">
-        <a href="/" class="nav-link">Dashboard</a>
+        {% if active_portal_slug %}
+            <a href="/p/{{ active_portal_slug }}" class="nav-link">Dashboard</a>
+        {% else %}
+            <a href="/" class="nav-link">Dashboard</a>
+        {% endif %}
         <a href="/accounts" class="nav-link">Accounts</a>
         <a href="/copying" class="nav-link active">Copying</a>
         <a href="/copier-trades" class="nav-link">Copier Trades</a>

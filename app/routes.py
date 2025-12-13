@@ -33,7 +33,9 @@ def register_routes(app):
     Args:
         app: Flask application instance
     """
-
+    @app.context_processor
+    def inject_portal_slug():
+        return dict(active_portal_slug=session.get('active_portal_slug'))
     # Add custom Jinja2 filter for JSON parsing
     @app.template_filter('from_json')
     def from_json_filter(value):
@@ -76,6 +78,8 @@ def register_routes(app):
 
         # Check for token in session
         token = session.get('access_token')
+
+        session.pop('active_portal_slug', None)
 
         if not token:
             # Check if user just logged out
@@ -650,7 +654,7 @@ def register_routes(app):
             # Save the requested URL to redirect back after login
             session['next_url'] = request.url
             return redirect(url_for('login'))  # Initiate OAuth flow
-
+        session['active_portal_slug'] = slug
         # Increment total views counter
         portal.total_views += 1
         db.session.commit()
