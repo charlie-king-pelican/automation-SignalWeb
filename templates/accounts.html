@@ -16,10 +16,6 @@
         <a href="/logout" class="nav-link nav-link-logout">Logout</a>
     </div>
 
-    <div class="header">
-        <h1>{{ profile_name }}'s Accounts</h1>
-    </div>
-
     <!-- Flash Messages -->
     {% if link_success %}
     <div class="flash-message flash-success">{{ link_success }}</div>
@@ -35,8 +31,9 @@
     {% endif %}
 
     <div class="container">
-        <!-- Link Account Button aligned with cards -->
-        <div style="max-width: 650px; margin: 0 auto 20px; text-align: right;">
+        <!-- Section Header with Link Account Button -->
+        <div class="accounts-header">
+            <h1>{{ profile_name }}'s Accounts</h1>
             <button class="link-account-btn" type="button" onclick="openLinkModal()">Link account</button>
         </div>
         {% if not copiers %}
@@ -51,10 +48,12 @@
         {% set currency = copier.stats.get('currency', 'USD') %}
         {% set return_color = '#2e7d32' if return_pct >= 0 else '#c62828' %}
 
-        <div class="account-card" style="position: relative;">
-            <button class="unlink-btn" type="button" onclick="confirmUnlink('{{ copier.id }}', '{{ copier.username }}')">Unlink</button>
+        <div class="account-card">
             <div class="account-info">
-                <div class="account-name">{{ copier.name }}</div>
+                <div class="account-name-row">
+                    <div class="account-name">{{ copier.name }}</div>
+                    <button class="unlink-btn" type="button" onclick="confirmUnlink('{{ copier.id }}', '{{ copier.username }}')">Unlink</button>
+                </div>
                 <div class="account-details">
                     <span>{{ copier.server }}</span>
                     <span>#{{ copier.username }}</span>

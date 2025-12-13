@@ -644,10 +644,28 @@ body {
     display: none;
 }
 
+/* Accounts Header - Section header with button on same row */
+.accounts-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    max-width: 650px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.accounts-header h1 {
+    font-size: 24px;
+    color: #333;
+    margin: 0;
+    font-weight: 600;
+}
+
 /* Link Account Button */
 .link-account-btn {
     border: none;
-    padding: 12px 24px;
+    padding: 10px 20px;
     border-radius: 8px;
     font-size: 14px;
     font-weight: 600;
@@ -663,11 +681,16 @@ body {
     box-shadow: 0 4px 16px rgba(41, 98, 255, 0.4);
 }
 
+/* Account Name Row - name and unlink button side by side */
+.account-name-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
 /* Unlink Button */
 .unlink-btn {
-    position: absolute;
-    top: 20px;
-    right: 20px;
     border: 1px solid #e0e0e0;
     background: white;
     padding: 6px 14px;
@@ -677,6 +700,8 @@ body {
     cursor: pointer;
     color: #c62828;
     transition: all 0.2s;
+    margin-left: 15px;
+    flex-shrink: 0;
 }
 
 .unlink-btn:hover {
@@ -1566,6 +1591,9 @@ body.accounts-page {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    max-width: 650px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .account-info {
@@ -1576,7 +1604,8 @@ body.accounts-page {
     font-size: 16px;
     font-weight: 600;
     color: #333;
-    margin-bottom: 5px;
+    margin: 0;
+    flex: 1;
 }
 
 .account-details {
