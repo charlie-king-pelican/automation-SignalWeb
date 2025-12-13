@@ -289,7 +289,13 @@ def register_routes(app):
 
         # Validation
         if not copier_id or not strategy_id:
-            return redirect(url_for('index'))
+            error_msg = 'Missing account or strategy'
+            if source == 'portal' and portal_slug:
+                return redirect(url_for('portal_view', slug=portal_slug, copy_error=error_msg))
+            elif source == 'copying':
+                return redirect(url_for('copying', copy_error=error_msg))
+            else:
+                return redirect(url_for('index', copy_error=error_msg))
 
         # Build settings payload
         settings = {
@@ -305,11 +311,19 @@ def register_routes(app):
         if status_code == 200:
             # Already copying - use PUT
             success, result = services.update_copy_settings(copier_id, strategy_id, token, settings)
-            action = 'updated'
+            success_msg = 'Copy settings updated successfully'
+            error_msg = f'Failed to update copy settings'
         else:
             # Not copying yet - use POST
             success, result = services.create_copy_settings(copier_id, strategy_id, token, settings)
-            action = 'copied'
+            success_msg = 'Copy started successfully'
+            error_msg = f'Failed to start copying'
+
+        # Add error details if available
+        if not success and result:
+            # Truncate long error messages
+            error_detail = str(result)[:200]
+            error_msg = f'{error_msg} - {error_detail}'
 
         # Track successful copies from portals
         if success and source == 'portal' and portal_slug:
@@ -341,21 +355,21 @@ def register_routes(app):
         # Redirect based on source
         if source == 'copying':
             if success:
-                return redirect(url_for('copying', copy_success=f'{strategy_name} {action} successfully'))
+                return redirect(url_for('copying', copy_success=success_msg))
             else:
-                return redirect(url_for('copying', copy_error=f'Failed to {action[:-1]} {strategy_name}'))
+                return redirect(url_for('copying', copy_error=error_msg))
         elif source == 'portal' and portal_slug:
             # Portal
             if success:
-                return redirect(url_for('portal_view', slug=portal_slug, copier_id=copier_id, copy_success=f'{strategy_name} {action} successfully'))
+                return redirect(url_for('portal_view', slug=portal_slug, copier_id=copier_id, copy_success=success_msg))
             else:
-                return redirect(url_for('portal_view', slug=portal_slug, copier_id=copier_id, copy_error=f'Failed to {action[:-1]} {strategy_name}'))
+                return redirect(url_for('portal_view', slug=portal_slug, copier_id=copier_id, copy_error=error_msg))
         else:
             # Dashboard
             if success:
-                return redirect(url_for('index', copier_id=copier_id, copy_success=f'{strategy_name} {action} successfully'))
+                return redirect(url_for('index', copier_id=copier_id, copy_success=success_msg))
             else:
-                return redirect(url_for('index', copier_id=copier_id, copy_error=f'Failed to {action[:-1]} {strategy_name}'))
+                return redirect(url_for('index', copier_id=copier_id, copy_error=error_msg))
 
     @app.route('/copying')
     def copying():

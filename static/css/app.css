@@ -1695,3 +1695,61 @@ body.debug-page {
 .debug-container a:hover {
     background: #e3edff;
 }
+
+/* Modal Alert Messages */
+.modal-alert {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.5;
+}
+
+.modal-alert span {
+    flex: 1;
+}
+
+.modal-alert-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+    margin-left: 15px;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-alert-close:hover {
+    opacity: 1;
+}
+
+.modal-alert-success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.modal-alert-success .modal-alert-close {
+    color: #155724;
+}
+
+.modal-alert-error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.modal-alert-error .modal-alert-close {
+    color: #721c24;
+}

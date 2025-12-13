@@ -16,13 +16,7 @@
         <a href="/logout" class="nav-link nav-link-logout">Logout</a>
     </div>
 
-    <!-- Flash Messages -->
-    {% if request.args.get('copy_success') %}
-    <div class="flash-message flash-success">{{ request.args.get('copy_success') }}</div>
-    {% endif %}
-    {% if request.args.get('copy_error') %}
-    <div class="flash-message flash-error">{{ request.args.get('copy_error') }}</div>
-    {% endif %}
+    <!-- Stop Messages (keep these as banners) -->
     {% if request.args.get('stop_success') %}
     <div class="flash-message flash-success">{{ request.args.get('stop_success') }}</div>
     {% endif %}
@@ -397,6 +391,19 @@
                 <input type="hidden" name="portal_slug" value="{{ portal.slug }}">
 
                 <div class="modal-body">
+                    <!-- Copy Status Alert -->
+                    {% if request.args.get('copy_success') %}
+                    <div class="modal-alert modal-alert-success">
+                        <span>{{ request.args.get('copy_success') }}</span>
+                        <button type="button" class="modal-alert-close" onclick="dismissModalAlert(this)">&times;</button>
+                    </div>
+                    {% endif %}
+                    {% if request.args.get('copy_error') %}
+                    <div class="modal-alert modal-alert-error">
+                        <span>{{ request.args.get('copy_error') }}</span>
+                        <button type="button" class="modal-alert-close" onclick="dismissModalAlert(this)">&times;</button>
+                    </div>
+                    {% endif %}
                     <!-- Trade Size Type -->
                     <div class="form-group">
                         <label for="trade_size_type">Trade Sizing Type</label>
@@ -511,6 +518,20 @@
                 // Redirect to portal URL with selected account
                 window.location.href = '/p/{{ portal.slug }}?copier_id=' + copierId;
             }
+        }
+
+        // Auto-open copy modal if there's a success/error message
+        window.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('copy_success') || urlParams.has('copy_error')) {
+                openCopyModal();
+            }
+        });
+
+        // Dismiss modal alert
+        function dismissModalAlert(button) {
+            const alert = button.parentElement;
+            alert.style.display = 'none';
         }
     </script>
 </body>
