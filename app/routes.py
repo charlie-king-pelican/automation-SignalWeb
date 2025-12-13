@@ -280,7 +280,8 @@ def register_routes(app):
         trade_size_value = request.form.get('trade_size_value')
         is_open_existing = request.form.get('is_open_existing') == 'on'
         is_round_up = request.form.get('is_round_up') == 'on'
-        source = request.form.get('source', 'dashboard')  # 'dashboard' or 'copying'
+        source = request.form.get('source', 'dashboard')  # 'dashboard', 'copying', or 'portal'
+        portal_slug = request.form.get('portal_slug')  # For portal tracking
 
         # Validation
         if not copier_id or not strategy_id:
@@ -306,12 +307,26 @@ def register_routes(app):
             success, result = services.create_copy_settings(copier_id, strategy_id, token, settings)
             action = 'copied'
 
+        # Track successful copies from portals
+        if success and source == 'portal' and portal_slug:
+            from app.models import Portal, db
+            portal = Portal.query.filter_by(slug=portal_slug).first()
+            if portal:
+                portal.successful_copies += 1
+                db.session.commit()
+
         # Redirect based on source
         if source == 'copying':
             if success:
                 return redirect(url_for('copying', copy_success=f'{strategy_name} {action} successfully'))
             else:
                 return redirect(url_for('copying', copy_error=f'Failed to {action[:-1]} {strategy_name}'))
+        elif source == 'portal' and portal_slug:
+            # Portal
+            if success:
+                return redirect(url_for('portal_view', slug=portal_slug, copier_id=copier_id, copy_success=f'{strategy_name} {action} successfully'))
+            else:
+                return redirect(url_for('portal_view', slug=portal_slug, copier_id=copier_id, copy_error=f'Failed to {action[:-1]} {strategy_name}'))
         else:
             # Dashboard
             if success:
@@ -635,6 +650,10 @@ def register_routes(app):
             # Save the requested URL to redirect back after login
             session['next_url'] = request.url
             return redirect(url_for('login'))  # Initiate OAuth flow
+
+        # Increment total views counter
+        portal.total_views += 1
+        db.session.commit()
 
         # Fetch user profile and accounts (needed for copy functionality)
         profile_info = services.get_profile_info(token)

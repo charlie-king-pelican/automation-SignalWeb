@@ -20,7 +20,9 @@ class Portal(db.Model):
     profile_id = db.Column(db.String(100), nullable=False)
     strategy_id = db.Column(db.String(100), nullable=False)
     is_active = db.Column(db.Boolean, default=True, nullable=False)
-    theme_json = db.Column(db.Text, nullable=True, default='{}')
+    theme_json = db.Column(db.Text, nullable=False, default='{}')
+    total_views = db.Column(db.Integer, default=0, nullable=False)
+    successful_copies = db.Column(db.Integer, default=0, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
