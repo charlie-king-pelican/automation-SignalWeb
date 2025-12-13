@@ -210,22 +210,77 @@ function closeUnlinkModal() {
 /**
  * Confirm unlink action - shows modal with account details
  * @param {string} copierId - The copier account ID
- * @param {string} accountName - The account name to display
+ * @param {string} accountNumber - The account number to display
  */
-function confirmUnlink(copierId, accountName) {
+function confirmUnlink(copierId, accountNumber) {
     const form = document.getElementById('unlinkForm');
-    const nameDisplay = document.getElementById('unlinkAccountName');
+    const numberDisplay = document.getElementById('unlinkAccountNumber');
 
-    if (form && nameDisplay) {
+    if (form && numberDisplay) {
         // Set the form action to the unlink route for this copier
         form.action = '/accounts/' + encodeURIComponent(copierId) + '/unlink';
 
-        // Display the account name in the confirmation message
-        nameDisplay.textContent = accountName;
+        // Display the account number in the confirmation message
+        numberDisplay.textContent = accountNumber;
 
         // Open the modal
         openUnlinkModal();
     }
+}
+
+/**
+ * Open edit modal on copying page with pre-filled settings
+ * @param {string} copierId - The copier account ID
+ * @param {string} strategyId - The strategy ID
+ * @param {string} strategyName - The strategy name
+ * @param {object} settings - Current copy settings
+ */
+function openEditModal(copierId, strategyId, strategyName, settings) {
+    // Set form values
+    document.getElementById('copy_copier_id').value = copierId;
+    document.getElementById('copy_strategy_id').value = strategyId;
+    document.getElementById('copy_strategy_name').value = strategyName;
+
+    // Set modal title
+    document.getElementById('copyModalTitle').textContent = 'Edit Copy Settings';
+
+    // Pre-fill settings if they exist
+    if (settings) {
+        const tradeSizeType = settings.TradeSizeType || 'Fixed';
+        const tradeSizeValue = settings.TradeSizeValue || 1.0;
+        const isOpenExisting = settings.IsOpenExistingTrades || false;
+        const isRoundUp = settings.IsRoundUpToMinimumSize || false;
+
+        document.getElementById('trade_size_type').value = tradeSizeType;
+        document.getElementById('trade_size_value').value = tradeSizeValue;
+        document.getElementById('is_open_existing').checked = isOpenExisting;
+        document.getElementById('is_round_up').checked = isRoundUp;
+
+        // Update label based on type
+        updateTradeSizeLabel();
+    }
+
+    // Open modal
+    openCopyModal();
+}
+
+/**
+ * Open stop copying modal on copying page
+ * @param {string} copierId - The copier account ID
+ * @param {string} strategyId - The strategy ID
+ * @param {string} strategyName - The strategy name
+ */
+function openStopModalCopying(copierId, strategyId, strategyName) {
+    // Set form values
+    document.getElementById('stop_copier_id').value = copierId;
+    document.getElementById('stop_strategy_id').value = strategyId;
+    document.getElementById('stop_strategy_name').value = strategyName;
+
+    // Set modal title
+    document.getElementById('stopModalTitle').textContent = 'Stop Copying ' + strategyName + '?';
+
+    // Open modal
+    openStopModal();
 }
 
 /**
@@ -314,6 +369,6 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Clean up flash message query params after a short delay
     setTimeout(() => {
-        cleanUrlParams(['link_success', 'link_error', 'unlink_success', 'unlink_error']);
+        cleanUrlParams(['link_success', 'link_error', 'unlink_success', 'unlink_error', 'copy_success', 'copy_error', 'stop_success', 'stop_error']);
     }, 100);
 });

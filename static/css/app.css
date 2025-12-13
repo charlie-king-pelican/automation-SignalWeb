@@ -665,6 +665,9 @@ body {
 
 /* Unlink Button */
 .unlink-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
     border: 1px solid #e0e0e0;
     background: white;
     padding: 6px 14px;

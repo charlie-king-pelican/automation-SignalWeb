@@ -17,10 +17,7 @@
     </div>
 
     <div class="header">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h1>{{ profile_name }}'s Accounts</h1>
-            <button class="link-account-btn" type="button" onclick="openLinkModal()">+ Link account</button>
-        </div>
+        <h1>{{ profile_name }}'s Accounts</h1>
     </div>
 
     <!-- Flash Messages -->
@@ -38,6 +35,10 @@
     {% endif %}
 
     <div class="container">
+        <!-- Link Account Button aligned with cards -->
+        <div style="max-width: 650px; margin: 0 auto 20px; text-align: right;">
+            <button class="link-account-btn" type="button" onclick="openLinkModal()">Link account</button>
+        </div>
         {% if not copiers %}
         <div class="no-data">No copier accounts found</div>
         {% else %}
@@ -50,20 +51,16 @@
         {% set currency = copier.stats.get('currency', 'USD') %}
         {% set return_color = '#2e7d32' if return_pct >= 0 else '#c62828' %}
 
-        <div class="account-card">
+        <div class="account-card" style="position: relative;">
+            <button class="unlink-btn" type="button" onclick="confirmUnlink('{{ copier.id }}', '{{ copier.username }}')">Unlink</button>
             <div class="account-info">
-                <div style="display: flex; justify-content: space-between; align-items: start;">
-                    <div>
-                        <div class="account-name">{{ copier.name }}</div>
-                        <div class="account-details">
-                            <span>{{ copier.server }}</span>
-                            <span>#{{ copier.username }}</span>
-                            {% if leverage %}
-                            <span style="color: #7f8c8d; font-size: 12px;">1:{{ leverage }}</span>
-                            {% endif %}
-                        </div>
-                    </div>
-                    <button class="unlink-btn" type="button" onclick="confirmUnlink('{{ copier.id }}', '{{ copier.name }}')">Unlink</button>
+                <div class="account-name">{{ copier.name }}</div>
+                <div class="account-details">
+                    <span>{{ copier.server }}</span>
+                    <span>#{{ copier.username }}</span>
+                    {% if leverage %}
+                    <span style="color: #7f8c8d; font-size: 12px;">1:{{ leverage }}</span>
+                    {% endif %}
                 </div>
             </div>
             <div class="account-stats">
@@ -155,13 +152,6 @@
                             Your password is sent securely and not stored anywhere.
                         </small>
                     </div>
-
-                    <!-- Currency Code (Optional) -->
-                    <div class="form-group">
-                        <label for="currency_code">Currency Code (optional)</label>
-                        <input type="text" id="currency_code" name="currency_code" class="form-control"
-                               placeholder="USD" maxlength="3">
-                    </div>
                 </div>
 
                 <div class="modal-footer">
@@ -182,11 +172,8 @@
             </div>
             <form id="unlinkForm" method="POST" action="">
                 <div class="modal-body">
-                    <p style="margin-bottom: 20px; color: #6c757d; font-size: 14px;">
-                        Are you sure you want to unlink <strong id="unlinkAccountName"></strong>?
-                    </p>
-                    <p style="margin-bottom: 0; color: #c62828; font-size: 13px;">
-                        This will remove the account from your dashboard. Any active copy trading relationships will be stopped.
+                    <p style="margin-bottom: 0; color: #6c757d; font-size: 14px;">
+                        Are you sure you want to unlink account <strong id="unlinkAccountNumber"></strong>?
                     </p>
                 </div>
 

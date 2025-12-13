@@ -20,6 +20,20 @@
         <h1 class="copying-title">Copying</h1>
         <p class="copying-subtitle">Manage which strategies your copier accounts are following</p>
 
+        <!-- Flash Messages -->
+        {% if copy_success %}
+        <div class="flash-message flash-success">{{ copy_success }}</div>
+        {% endif %}
+        {% if copy_error %}
+        <div class="flash-message flash-error">{{ copy_error }}</div>
+        {% endif %}
+        {% if stop_success %}
+        <div class="flash-message flash-success">{{ stop_success }}</div>
+        {% endif %}
+        {% if stop_error %}
+        <div class="flash-message flash-error">{{ stop_error }}</div>
+        {% endif %}
+
         {% if not copiers_data %}
         <div class="empty-state-card">
             <p>No copier accounts found.</p>
@@ -93,8 +107,8 @@
                                     {% endif %}
                                 </td>
                                 <td class="actions-cell">
-                                    <a href="/?copier_id={{ copier_data.copier.id }}&open_copy_modal=1" class="action-link edit-link">Edit</a>
-                                    <a href="/?copier_id={{ copier_data.copier.id }}&stop_strategy_id={{ strategy_data.strategy.id }}&open_stop_modal=1" class="action-link stop-link">Stop</a>
+                                    <a href="javascript:void(0)" onclick="openEditModal('{{ copier_data.copier.id }}', '{{ strategy_data.strategy.id }}', '{{ strategy_data.strategy.name }}', {{ strategy_data.settings | tojson }})" class="action-link edit-link">Edit</a>
+                                    <a href="javascript:void(0)" onclick="openStopModalCopying('{{ copier_data.copier.id }}', '{{ strategy_data.strategy.id }}', '{{ strategy_data.strategy.name }}')" class="action-link stop-link">Stop</a>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -106,5 +120,120 @@
             {% endfor %}
         {% endif %}
     </div>
+
+    <!-- Edit Copy Settings Modal -->
+    <div id="copyModal" class="modal" style="display: none;">
+        <div class="modal-overlay" onclick="closeCopyModal()"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="copyModalTitle">Edit Copy Settings</h2>
+                <button class="modal-close" type="button" onclick="closeCopyModal()">&times;</button>
+            </div>
+            <form method="POST" action="/copy-strategy">
+                <input type="hidden" id="copy_copier_id" name="copier_id" value="">
+                <input type="hidden" id="copy_strategy_id" name="strategy_id" value="">
+                <input type="hidden" id="copy_strategy_name" name="strategy_name" value="">
+                <input type="hidden" name="source" value="copying">
+
+                <div class="modal-body">
+                    <!-- Trade Size Type -->
+                    <div class="form-group">
+                        <label for="trade_size_type">Trade Sizing Type</label>
+                        <select id="trade_size_type" name="trade_size_type" class="form-control" onchange="updateTradeSizeLabel()" required>
+                            <option value="Fixed">Fixed</option>
+                            <option value="MirrorSize">Mirror Size</option>
+                            <option value="MirrorRiskByEquity">Mirror Risk by Equity</option>
+                            <option value="MirrorRiskByBalance">Mirror Risk by Balance</option>
+                        </select>
+                    </div>
+
+                    <!-- Trade Size Value -->
+                    <div class="form-group">
+                        <label for="trade_size_value" id="trade_size_label">Multiplier</label>
+                        <input type="number" id="trade_size_value" name="trade_size_value" class="form-control"
+                               min="0.01" step="0.01" value="1.0" required>
+                    </div>
+
+                    <!-- Copy Existing Open Trades -->
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="is_open_existing" name="is_open_existing">
+                            Copy existing open trades
+                        </label>
+                    </div>
+
+                    <!-- Round Up to Minimum Size -->
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="is_round_up" name="is_round_up">
+                            Round up to minimum trade size
+                        </label>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="closeCopyModal()">Cancel</button>
+                    <button type="submit" class="btn-primary">Update</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Stop Copying Modal -->
+    <div id="stopModal" class="modal" style="display: none;">
+        <div class="modal-overlay" onclick="closeStopModal()"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="stopModalTitle">Stop Copying Strategy?</h2>
+                <button class="modal-close" type="button" onclick="closeStopModal()">&times;</button>
+            </div>
+            <form method="POST" action="/stop-copy">
+                <input type="hidden" id="stop_copier_id" name="copier_id" value="">
+                <input type="hidden" id="stop_strategy_id" name="strategy_id" value="">
+                <input type="hidden" id="stop_strategy_name" name="strategy_name" value="">
+                <input type="hidden" name="source" value="copying">
+
+                <div class="modal-body">
+                    <p style="margin-bottom: 20px; color: #6c757d; font-size: 14px;">
+                        Choose how to handle your existing positions:
+                    </p>
+
+                    <!-- Mode Selection -->
+                    <div class="form-group">
+                        <label class="radio-option">
+                            <input type="radio" name="mode" value="Mirror" checked>
+                            <div class="radio-content">
+                                <div class="radio-label">Mirror (Recommended)</div>
+                                <div class="radio-description">Stop copying but let existing positions close when the strategy closes them. This mirrors the strategy's exit timing.</div>
+                            </div>
+                        </label>
+
+                        <label class="radio-option">
+                            <input type="radio" name="mode" value="Close">
+                            <div class="radio-content">
+                                <div class="radio-label">Close Immediately</div>
+                                <div class="radio-description">Stop copying and close all positions now at market price. May result in slippage.</div>
+                            </div>
+                        </label>
+
+                        <label class="radio-option">
+                            <input type="radio" name="mode" value="Manual">
+                            <div class="radio-content">
+                                <div class="radio-label">Manual</div>
+                                <div class="radio-description">Stop copying and leave positions open for you to manage manually.</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="closeStopModal()">Cancel</button>
+                    <button type="submit" class="btn-primary" style="background: #c62828;">Stop Copying</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
 </html>

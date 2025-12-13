@@ -249,17 +249,15 @@ def register_routes(app):
         # Get form data
         copier_id = request.form.get('copier_id')
         strategy_id = request.form.get('strategy_id')
+        strategy_name = request.form.get('strategy_name', 'Strategy')
         trade_size_type = request.form.get('trade_size_type')
         trade_size_value = request.form.get('trade_size_value')
         is_open_existing = request.form.get('is_open_existing') == 'on'
         is_round_up = request.form.get('is_round_up') == 'on'
+        source = request.form.get('source', 'dashboard')  # 'dashboard' or 'copying'
 
         # Validation
-        if not copier_id:
-            # TODO: Add flash message support
-            return redirect(url_for('index'))
-
-        if not strategy_id:
+        if not copier_id or not strategy_id:
             return redirect(url_for('index'))
 
         # Build settings payload
@@ -276,16 +274,24 @@ def register_routes(app):
         if status_code == 200:
             # Already copying - use PUT
             success, result = services.update_copy_settings(copier_id, strategy_id, token, settings)
+            action = 'updated'
         else:
             # Not copying yet - use POST
             success, result = services.create_copy_settings(copier_id, strategy_id, token, settings)
+            action = 'copied'
 
-        if success:
-            # Redirect back with copier_id to show updated state
-            return redirect(url_for('index', copier_id=copier_id))
+        # Redirect based on source
+        if source == 'copying':
+            if success:
+                return redirect(url_for('copying', copy_success=f'{strategy_name} {action} successfully'))
+            else:
+                return redirect(url_for('copying', copy_error=f'Failed to {action[:-1]} {strategy_name}'))
         else:
-            # TODO: Add flash message for error
-            return redirect(url_for('index', copier_id=copier_id))
+            # Dashboard
+            if success:
+                return redirect(url_for('index', copier_id=copier_id, copy_success=f'{strategy_name} {action} successfully'))
+            else:
+                return redirect(url_for('index', copier_id=copier_id, copy_error=f'Failed to {action[:-1]} {strategy_name}'))
 
     @app.route('/copying')
     def copying():
@@ -302,6 +308,12 @@ def register_routes(app):
         profile_id = services.get_profile_id(token)
         if not profile_id:
             return "Error: Could not retrieve profile", 500
+
+        # Check for flash messages in query params
+        copy_success = request.args.get('copy_success')
+        copy_error = request.args.get('copy_error')
+        stop_success = request.args.get('stop_success')
+        stop_error = request.args.get('stop_error')
 
         # Get all copiers for this profile (1 API call)
         copiers = services.list_profile_copiers(profile_id, token)
@@ -359,6 +371,10 @@ def register_routes(app):
         response = make_response(render_template(
             'copying.html',
             copiers_data=copiers_data,
+            copy_success=copy_success,
+            copy_error=copy_error,
+            stop_success=stop_success,
+            stop_error=stop_error,
             format_trade_sizing=services.format_trade_sizing
         ))
         return add_no_cache_headers(response)
@@ -372,14 +388,15 @@ def register_routes(app):
 
         copier_id = request.form.get('copier_id')
         strategy_id = request.form.get('strategy_id')
+        strategy_name = request.form.get('strategy_name', 'Strategy')
         mode = request.form.get('mode', 'Mirror')
         source = request.form.get('source', 'copying')  # 'copying' or 'dashboard'
 
         # Validation
         if not copier_id or not strategy_id:
             if source == 'dashboard':
-                return redirect(url_for('index', copier_id=copier_id, stop_error=1))
-            return redirect(url_for('copying'))
+                return redirect(url_for('index', copier_id=copier_id, stop_error='Missing copier or strategy'))
+            return redirect(url_for('copying', stop_error='Missing copier or strategy'))
 
         # Validate mode
         if mode not in ['Mirror', 'Close', 'Manual']:
@@ -391,12 +408,15 @@ def register_routes(app):
         # Redirect based on source
         if source == 'dashboard':
             if success:
-                return redirect(url_for('index', copier_id=copier_id, stop_success=1))
+                return redirect(url_for('index', copier_id=copier_id, stop_success=f'Stopped copying {strategy_name}'))
             else:
-                return redirect(url_for('index', copier_id=copier_id, stop_error=1))
+                return redirect(url_for('index', copier_id=copier_id, stop_error=f'Failed to stop copying {strategy_name}'))
         else:
             # Redirect back to copying page
-            return redirect(url_for('copying'))
+            if success:
+                return redirect(url_for('copying', stop_success=f'Stopped copying {strategy_name}'))
+            else:
+                return redirect(url_for('copying', stop_error=f'Failed to stop copying {strategy_name}'))
 
     @app.route('/copier-trades')
     def copier_trades():
@@ -517,11 +537,10 @@ def register_routes(app):
         server_code = request.form.get('server_code')
         username = request.form.get('username')
         password = request.form.get('password')
-        currency_code = request.form.get('currency_code', '').strip()
 
         # Validation
         if not broker_code or not server_code or not username or not password:
-            return redirect(url_for('accounts', link_error='All fields except currency are required'))
+            return redirect(url_for('accounts', link_error='All fields are required'))
 
         # Build payload
         payload = {
@@ -533,10 +552,6 @@ def register_routes(app):
                 'password': password
             }
         }
-
-        # Add optional currency code
-        if currency_code:
-            payload['connection']['currencyCode'] = currency_code
 
         # Create copier
         success, result = services.create_copier(token, profile_id, payload)
