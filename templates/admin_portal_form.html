@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if portal %}Edit{% else %}Create{% endif %} Portal - Admin</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+    <style>
+        .admin-nav {
+            background: #333;
+            padding: 15px 30px;
+            color: white;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .admin-nav h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .admin-nav a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            background: #555;
+            border-radius: 4px;
+        }
+        .admin-nav a:hover {
+            background: #666;
+        }
+        .form-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-radius: 8px;
+        }
+        .form-section {
+            margin-bottom: 30px;
+            padding-bottom: 30px;
+            border-bottom: 1px solid #eee;
+        }
+        .form-section:last-of-type {
+            border-bottom: none;
+        }
+        .form-section h2 {
+            margin: 0 0 20px 0;
+            font-size: 18px;
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+        .form-group input[type="text"],
+        .form-group input[type="url"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 15px;
+            box-sizing: border-box;
+        }
+        .form-group input[type="text"]:focus,
+        .form-group input[type="url"]:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+        .form-group input[type="text"]:read-only {
+            background: #f8f9fa;
+            color: #666;
+        }
+        .help-text {
+            font-size: 13px;
+            color: #666;
+            margin-top: 5px;
+        }
+        .checkbox-group {
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+        .checkbox-group label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: normal !important;
+            cursor: pointer;
+        }
+        .checkbox-group label:last-child {
+            margin-bottom: 0;
+        }
+        .checkbox-group input[type="checkbox"] {
+            margin-right: 8px;
+        }
+        .form-actions {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        .btn-submit {
+            background: #28a745;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .btn-submit:hover {
+            background: #218838;
+        }
+        .btn-cancel {
+            background: #6c757d;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            margin-left: 10px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-cancel:hover {
+            background: #5a6268;
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-nav">
+        <h1>{% if portal %}Edit{% else %}Create{% endif %} Portal</h1>
+        <a href="{{ url_for('admin_portals') }}">← Back to Portals</a>
+    </div>
+
+    <div class="form-container">
+        <form method="POST">
+            <div class="form-section">
+                <h2>Basic Information</h2>
+
+                <div class="form-group">
+                    <label for="name">Portal Name *</label>
+                    <input type="text" id="name" name="name" required
+                           value="{% if portal %}{{ portal.name }}{% endif %}"
+                           placeholder="e.g., Premium Strategy Portal">
+                    <div class="help-text">Internal name for identifying this portal in admin</div>
+                </div>
+
+                {% if portal %}
+                <div class="form-group">
+                    <label>Portal URL</label>
+                    <input type="text" readonly
+                           value="{{ request.url_root }}p/{{ portal.slug }}">
+                    <div class="help-text">This URL is permanent and cannot be changed</div>
+                </div>
+                {% endif %}
+
+                <div class="form-group">
+                    <label for="profile_id">Profile ID *</label>
+                    <input type="text" id="profile_id" name="profile_id" required
+                           value="{% if portal %}{{ portal.profile_id }}{% endif %}"
+                           placeholder="e.g., 12345">
+                    <div class="help-text">The profile ID that owns this strategy</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="strategy_id">Strategy ID *</label>
+                    <input type="text" id="strategy_id" name="strategy_id" required
+                           value="{% if portal %}{{ portal.strategy_id }}{% endif %}"
+                           placeholder="e.g., 67890">
+                    <div class="help-text">The strategy account ID to display</div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h2>Branding & Customization</h2>
+
+                <div class="form-group">
+                    <label for="headline">Headline</label>
+                    <input type="text" id="headline" name="headline"
+                           value="{% if portal %}{{ portal.theme_json|from_json|attr('headline') }}{% endif %}"
+                           placeholder="e.g., Elite Trading Strategy">
+                    <div class="help-text">Main title shown on the portal (leave empty to use strategy name)</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="subheadline">Subheadline</label>
+                    <input type="text" id="subheadline" name="subheadline"
+                           value="{% if portal %}{{ portal.theme_json|from_json|attr('subheadline') }}{% endif %}"
+                           placeholder="e.g., Consistent returns since 2020">
+                    <div class="help-text">Subtitle shown below headline (leave empty to use inception date)</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="cta_text">Call-to-Action Text</label>
+                    <input type="text" id="cta_text" name="cta_text"
+                           value="{% if portal %}{{ portal.theme_json|from_json|attr('cta_text') }}{% endif %}"
+                           placeholder="e.g., Start Copying Today">
+                    <div class="help-text">Text for the action button (leave empty for default)</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="cta_url">Call-to-Action URL</label>
+                    <input type="url" id="cta_url" name="cta_url"
+                           value="{% if portal %}{{ portal.theme_json|from_json|attr('cta_url') }}{% endif %}"
+                           placeholder="https://example.com/signup">
+                    <div class="help-text">Where the CTA button should link to</div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h2>Visible Sections</h2>
+
+                <div class="form-group">
+                    <label>Choose which sections to display on the portal:</label>
+                    {% set visible = portal.theme_json|from_json|attr('visible_sections') if portal else {} %}
+                    <div class="checkbox-group">
+                        <label>
+                            <input type="checkbox" name="visible_overview"
+                                   {% if not portal or visible.get('overview', True) %}checked{% endif %}>
+                            <strong>Overview</strong> - Performance metrics, trade statistics, account status
+                        </label>
+                        <label>
+                            <input type="checkbox" name="visible_signals"
+                                   {% if not portal or visible.get('signals', True) %}checked{% endif %}>
+                            <strong>Open Signals</strong> - Current open positions
+                        </label>
+                        <label>
+                            <input type="checkbox" name="visible_trades"
+                                   {% if not portal or visible.get('trades', True) %}checked{% endif %}>
+                            <strong>Closed Trades</strong> - Trade history and statistics
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h2>Portal Status</h2>
+
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <label>
+                            <input type="checkbox" name="is_active"
+                                   {% if not portal or portal.is_active %}checked{% endif %}>
+                            <strong>Active</strong> - Portal is publicly accessible (users must still login)
+                        </label>
+                    </div>
+                    <div class="help-text">Uncheck to disable the portal without deleting it</div>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn-submit">
+                    {% if portal %}Update Portal{% else %}Create Portal{% endif %}
+                </button>
+                <a href="{{ url_for('admin_portals') }}" class="btn-cancel">Cancel</a>
+            </div>
+        </form>
+    </div>
+</body>
+</html>

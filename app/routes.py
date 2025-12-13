@@ -3,6 +3,9 @@ Flask routes for Copy Trade dashboard.
 All HTML rendering is done via templates - no inline HTML strings.
 """
 
+import os
+import secrets
+import json
 from flask import render_template, redirect, request, url_for, session, make_response
 from app import services
 
@@ -31,6 +34,23 @@ def register_routes(app):
         app: Flask application instance
     """
 
+    # Add custom Jinja2 filter for JSON parsing
+    @app.template_filter('from_json')
+    def from_json_filter(value):
+        """Parse JSON string to Python object."""
+        if not value:
+            return {}
+        try:
+            return json.loads(value)
+        except:
+            return {}
+
+    def format_currency(value, currency_code='USD'):
+        """Format currency value with proper symbol."""
+        symbols = {'USD': '$', 'EUR': '€', 'GBP': '£', 'JPY': '¥', 'AUD': 'A$', 'CAD': 'C$'}
+        symbol = symbols.get(currency_code, currency_code)
+        return f"{symbol}{value:,.2f}"
+
     @app.route('/')
     def index():
         """Main dashboard page - handles OAuth callback and displays strategy data."""
@@ -47,7 +67,9 @@ def register_routes(app):
                 if 'access_token' in data:
                     session['access_token'] = data['access_token']
                     session.permanent = True  # Enable 1-hour timeout
-                    return redirect(url_for('index'))
+                    # Redirect to original destination if saved, otherwise to dashboard
+                    next_url = session.pop('next_url', None)
+                    return redirect(next_url if next_url else url_for('index'))
                 else:
                     error_msg = data.get('error_description', data.get('error', 'Unknown Error'))
                     return f"Token Exchange Error: {error_msg}"
@@ -582,3 +604,263 @@ def register_routes(app):
         else:
             error_msg = error if error else f'Failed to unlink account (status: {status_code})'
             return redirect(url_for('accounts', unlink_error=error_msg))
+
+    # ==========================================
+    # AUTHENTICATED PORTAL ROUTES
+    # ==========================================
+
+    @app.route('/p/<slug>')
+    def portal_view(slug):
+        """
+        Authenticated portal view - displays specific strategy with full functionality.
+
+        Requires authentication via existing OAuth flow.
+        Provides same features as main dashboard: copy, link/unlink accounts, signals.
+        Uses session['access_token'] same as all other authenticated routes.
+        """
+        from app.models import Portal, db
+
+        # Fetch active portal
+        portal = Portal.query.filter_by(slug=slug, is_active=True).first()
+        if not portal:
+            return render_template('404.html'), 404
+
+        # Check authentication - redirect to login if not authenticated
+        token = session.get('access_token')
+        if not token:
+            # Save the requested URL to redirect back after login
+            session['next_url'] = request.url
+            return redirect(url_for('index'))  # Will redirect to login page
+
+        # Fetch user profile and accounts (needed for copy functionality)
+        profile_info = services.get_profile_info(token)
+        accounts_list = services.get_accounts_list(token)
+
+        # Fetch strategy data using authenticated user's token
+        strategy_data = services.get_strategy_by_id(portal.profile_id, portal.strategy_id, token)
+
+        # Handle unauthorized (expired token, etc.)
+        if strategy_data.get('unauthorized'):
+            session.pop('access_token', None)  # Clear invalid token
+            session['next_url'] = request.url
+            return redirect(url_for('index'))
+
+        # Parse theme configuration
+        theme = json.loads(portal.theme_json) if portal.theme_json else {}
+        theme.setdefault('headline', strategy_data.get('name', 'Trading Strategy'))
+        theme.setdefault('subheadline', f"Trading since {strategy_data.get('inception_date', 'N/A')}")
+        theme.setdefault('cta_text', 'Start Copying')
+        theme.setdefault('cta_url', '#')
+        theme.setdefault('visible_sections', {'overview': True, 'signals': True, 'trades': True})
+
+        # Get selected copier from query params (for account selector)
+        selected_copier_id = request.args.get('copier_id')
+
+        # Check if selected account is copying this strategy
+        is_copying = False
+        copy_settings = None
+        if selected_copier_id:
+            copy_settings, status_code = services.get_copy_settings(
+                selected_copier_id, portal.strategy_id, token
+            )
+            is_copying = (status_code == 200 and copy_settings is not None)
+
+        # Fetch signals
+        open_signals = []
+        closed_signals = []
+        closed_trades_range = request.args.get('range', '30d')
+
+        if theme['visible_sections'].get('signals'):
+            open_signals = services.get_strategy_open_signals(portal.strategy_id, token)
+
+        if theme['visible_sections'].get('trades'):
+            from datetime import datetime, timedelta
+            end_dt = datetime.utcnow()
+            days = 30 if closed_trades_range == '30d' else 7
+            start_dt = end_dt - timedelta(days=days)
+            start_dt_iso = start_dt.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
+            end_dt_iso = end_dt.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
+            closed_signals = services.get_strategy_closed_signals(portal.strategy_id, token, start_dt_iso, end_dt_iso)
+
+        # Compute closed trade stats
+        closed_trades_stats = services.compute_closed_trades_stats(closed_signals)
+
+        fee_display = f"{strategy_data['performance_fee']:.1f}%" if strategy_data['performance_fee'] > 0 else "None"
+
+        # Render portal template (authenticated, no-cache headers)
+        response = make_response(render_template(
+            'portal.html',
+            portal=portal,
+            theme=theme,
+            profile_info=profile_info,
+            accounts_list=accounts_list,
+            strategy=strategy_data,
+            strategy_id=portal.strategy_id,
+            fee_display=fee_display,
+            inception_display=strategy_data.get('inception_date', 'N/A'),
+            open_signals=open_signals,
+            closed_signals=closed_signals,
+            closed_trades_range=closed_trades_range,
+            closed_trades_stats=closed_trades_stats,
+            selected_copier_id=selected_copier_id,
+            is_copying=is_copying,
+            copy_settings=copy_settings,
+            format_currency=format_currency
+        ))
+        return add_no_cache_headers(response)
+
+    # ==========================================
+    # ADMIN ROUTES
+    # ==========================================
+
+    def require_admin():
+        """Check admin authentication."""
+        if not session.get('admin_authenticated'):
+            return redirect(url_for('admin_login'))
+        return None
+
+    @app.route('/admin/login', methods=['GET', 'POST'])
+    def admin_login():
+        """Admin login page."""
+        if request.method == 'POST':
+            password = request.form.get('password')
+            admin_password = os.environ.get('ADMIN_PASSWORD')
+
+            if not admin_password:
+                return "Admin not configured", 500
+
+            if password == admin_password:
+                session['admin_authenticated'] = True
+                session.permanent = True
+                return redirect(url_for('admin_portals'))
+            else:
+                return render_template('admin_login.html', error="Invalid password")
+
+        if session.get('admin_authenticated'):
+            return redirect(url_for('admin_portals'))
+
+        return render_template('admin_login.html')
+
+    @app.route('/admin/logout')
+    def admin_logout():
+        """Admin logout."""
+        session.pop('admin_authenticated', None)
+        return redirect(url_for('admin_login'))
+
+    @app.route('/admin/portals')
+    def admin_portals():
+        """List all portals."""
+        auth_check = require_admin()
+        if auth_check:
+            return auth_check
+
+        from app.models import Portal, db
+        portals = Portal.query.order_by(Portal.created_at.desc()).all()
+        response = make_response(render_template('admin_portals.html', portals=portals))
+        return add_no_cache_headers(response)
+
+    @app.route('/admin/portals/create', methods=['GET', 'POST'])
+    def admin_portal_create():
+        """Create new portal."""
+        auth_check = require_admin()
+        if auth_check:
+            return auth_check
+
+        from app.models import Portal, db
+
+        if request.method == 'POST':
+            slug = secrets.token_urlsafe(32)  # 256 bits entropy, ~43 chars
+
+            visible_sections = {
+                'overview': request.form.get('visible_overview') == 'on',
+                'signals': request.form.get('visible_signals') == 'on',
+                'trades': request.form.get('visible_trades') == 'on'
+            }
+
+            theme = {
+                'headline': request.form.get('headline', ''),
+                'subheadline': request.form.get('subheadline', ''),
+                'cta_text': request.form.get('cta_text', ''),
+                'cta_url': request.form.get('cta_url', ''),
+                'visible_sections': visible_sections
+            }
+
+            portal = Portal(
+                name=request.form.get('name'),
+                slug=slug,
+                profile_id=request.form.get('profile_id'),
+                strategy_id=request.form.get('strategy_id'),
+                is_active=request.form.get('is_active') == 'on',
+                theme_json=json.dumps(theme)
+            )
+
+            db.session.add(portal)
+            db.session.commit()
+
+            return redirect(url_for('admin_portals'))
+
+        response = make_response(render_template('admin_portal_form.html', portal=None))
+        return add_no_cache_headers(response)
+
+    @app.route('/admin/portals/<int:portal_id>/edit', methods=['GET', 'POST'])
+    def admin_portal_edit(portal_id):
+        """Edit existing portal."""
+        auth_check = require_admin()
+        if auth_check:
+            return auth_check
+
+        from app.models import Portal, db
+        portal = Portal.query.get_or_404(portal_id)
+
+        if request.method == 'POST':
+            visible_sections = {
+                'overview': request.form.get('visible_overview') == 'on',
+                'signals': request.form.get('visible_signals') == 'on',
+                'trades': request.form.get('visible_trades') == 'on'
+            }
+
+            theme = {
+                'headline': request.form.get('headline', ''),
+                'subheadline': request.form.get('subheadline', ''),
+                'cta_text': request.form.get('cta_text', ''),
+                'cta_url': request.form.get('cta_url', ''),
+                'visible_sections': visible_sections
+            }
+
+            portal.name = request.form.get('name')
+            portal.profile_id = request.form.get('profile_id')
+            portal.strategy_id = request.form.get('strategy_id')
+            portal.is_active = request.form.get('is_active') == 'on'
+            portal.theme_json = json.dumps(theme)
+
+            db.session.commit()
+            return redirect(url_for('admin_portals'))
+
+        response = make_response(render_template('admin_portal_form.html', portal=portal))
+        return add_no_cache_headers(response)
+
+    @app.route('/admin/portals/<int:portal_id>/delete', methods=['POST'])
+    def admin_portal_delete(portal_id):
+        """Delete portal."""
+        auth_check = require_admin()
+        if auth_check:
+            return auth_check
+
+        from app.models import Portal, db
+        portal = Portal.query.get_or_404(portal_id)
+        db.session.delete(portal)
+        db.session.commit()
+        return redirect(url_for('admin_portals'))
+
+    @app.route('/admin/portals/<int:portal_id>/toggle', methods=['POST'])
+    def admin_portal_toggle(portal_id):
+        """Toggle portal active status."""
+        auth_check = require_admin()
+        if auth_check:
+            return auth_check
+
+        from app.models import Portal, db
+        portal = Portal.query.get_or_404(portal_id)
+        portal.is_active = not portal.is_active
+        db.session.commit()
+        return redirect(url_for('admin_portals'))

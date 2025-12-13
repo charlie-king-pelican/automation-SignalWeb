@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ theme.headline }} - Trading Portal</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+</head>
+<body>
+    <!-- Navigation -->
+    <div class="page-nav">
+        <a href="/" class="nav-link">Dashboard</a>
+        <a href="/accounts" class="nav-link">Accounts</a>
+        <a href="/copying" class="nav-link">Copying</a>
+        <a href="/copier-trades" class="nav-link">Copier Trades</a>
+        <a href="/logout" class="nav-link nav-link-logout">Logout</a>
+    </div>
+
+    <!-- Flash Messages -->
+    {% if request.args.get('copy_success') %}
+    <div class="flash-message flash-success">{{ request.args.get('copy_success') }}</div>
+    {% endif %}
+    {% if request.args.get('copy_error') %}
+    <div class="flash-message flash-error">{{ request.args.get('copy_error') }}</div>
+    {% endif %}
+    {% if request.args.get('stop_success') %}
+    <div class="flash-message flash-success">{{ request.args.get('stop_success') }}</div>
+    {% endif %}
+    {% if request.args.get('stop_error') %}
+    <div class="flash-message flash-error">{{ request.args.get('stop_error') }}</div>
+    {% endif %}
+
+    <div class="card">
+        <!-- Hero Section: The Anchor -->
+        <div class="hero-section">
+            <div class="badge">{{ portal.name }}</div>
+            <div class="strategy-name">{{ theme.headline }}</div>
+            <div class="inception-date">{{ theme.subheadline }}</div>
+
+            <!-- Account Selector -->
+            {% if accounts_list %}
+            <div class="account-selector-wrapper">
+                <div class="account-selector-label">Account</div>
+                <select id="accountSelector" class="account-selector" onchange="handleAccountChange()">
+                    <option value="" disabled {% if not selected_copier_id %}selected{% endif %}>Select account</option>
+                    {% for acc in accounts_list %}
+                    <option value="{{ acc.id }}" data-type="{{ acc.type }}"
+                            {% if selected_copier_id and (selected_copier_id|string) == (acc.id|string) %}selected{% endif %}>
+                        {{ acc.name }} • {{ acc.server }} • {{ acc.username }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+
+            <!-- Main Performance Stats -->
+            <div class="stats-container">
+                <div class="stat-box">
+                    <div class="stat-value">{{ '{:,.2f}'.format(strategy.return_val) }}%</div>
+                    <div class="stat-label">Total Return</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value">{{ '{:,}'.format(strategy.copiers) }}</div>
+                    <div class="stat-label">Copiers</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value">{{ fee_display }}</div>
+                    <div class="stat-label">Performance Fee</div>
+                </div>
+            </div>
+
+            <!-- Optional CTA Button -->
+            {% if theme.cta_url and theme.cta_text %}
+            <div style="margin-top: 30px;">
+                <a href="{{ theme.cta_url }}" target="_blank" class="copy-btn" style="display: inline-block; text-decoration: none; text-align: center;">
+                    {{ theme.cta_text }}
+                </a>
+            </div>
+            {% endif %}
+
+            <!-- Page Tabs -->
+            <div class="page-tabs">
+                {% if theme.visible_sections.get('overview', True) %}
+                <button id="pageTabOverview" class="page-tab-btn active" type="button" onclick="showPageTab('overview')">Overview</button>
+                {% endif %}
+                {% if theme.visible_sections.get('signals', True) or theme.visible_sections.get('trades', True) %}
+                <button id="pageTabTrades" class="page-tab-btn {% if not theme.visible_sections.get('overview', True) %}active{% endif %}" type="button" onclick="showPageTab('trades')">Trades</button>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Content Sections -->
+        <div class="content-sections">
+
+            {% if theme.visible_sections.get('overview', True) %}
+            <div id="overviewSection" class="page-section active">
+
+                <!-- Trade Performance Section -->
+                <div class="trades-section">
+                    <div class="section-title">TRADE PERFORMANCE</div>
+                    <div class="trades-grid">
+                        <div class="trade-stat">
+                            <div class="trade-stat-value">{{ '{:,}'.format(strategy.total_trades) }}</div>
+                            <div class="trade-stat-label">Total Trades</div>
+                        </div>
+                        <div class="trade-stat">
+                            <div class="trade-stat-value">{{ '{:,}'.format(strategy.min_per_month) }}</div>
+                            <div class="trade-stat-label">Min / Month</div>
+                        </div>
+                        <div class="trade-stat">
+                            <div class="trade-stat-value">{{ '{:,}'.format(strategy.max_per_month) }}</div>
+                            <div class="trade-stat-label">Max / Month</div>
+                        </div>
+                    </div>
+                    <div class="win-loss-row">
+                        <div class="trade-stat">
+                            <div class="trade-stat-value">{{ '{:,}'.format(strategy.wins) }}</div>
+                            <div class="trade-stat-label">Wins</div>
+                        </div>
+                        <div class="trade-stat">
+                            <div class="trade-stat-value">{{ '{:,}'.format(strategy.losses) }}</div>
+                            <div class="trade-stat-label">Losses</div>
+                        </div>
+                        <div class="trade-stat">
+                            <div class="trade-stat-value">{{ '%.1f'|format(strategy.win_rate) }}%</div>
+                            <div class="trade-stat-label">Win Rate</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Profitability & Risk Section -->
+                <div class="profitability-section">
+                    <div class="section-title">PROFITABILITY & RISK</div>
+                    <div class="profit-grid">
+                        <div class="profit-stat">
+                            <div class="profit-stat-value">{{ format_currency(strategy.realised_pnl, strategy.currency_code) }}</div>
+                            <div class="profit-stat-label">Realised P&L</div>
+                        </div>
+                        <div class="profit-stat">
+                            <div class="profit-stat-value">{{ format_currency(strategy.unrealised_pnl, strategy.currency_code) }}</div>
+                            <div class="profit-stat-label">Unrealised P&L</div>
+                        </div>
+                        <div class="profit-stat">
+                            <div class="profit-stat-value">{{ '%.2f'|format(strategy.max_drawdown) }}%</div>
+                            <div class="profit-stat-label">Max Drawdown</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Account Status Section -->
+                <div class="account-section">
+                    <div class="section-title">ACCOUNT STATUS</div>
+                    <div class="account-grid">
+                        <div class="account-stat">
+                            <div class="account-stat-value">{{ format_currency(strategy.balance, strategy.currency_code) }}</div>
+                            <div class="account-stat-label">Balance</div>
+                        </div>
+                        <div class="account-stat">
+                            <div class="account-stat-value">{{ format_currency(strategy.equity, strategy.currency_code) }}</div>
+                            <div class="account-stat-label">Equity</div>
+                        </div>
+                        <div class="account-stat">
+                            <div class="account-stat-value">1:{{ strategy.leverage }}</div>
+                            <div class="account-stat-label">Leverage</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Copiers Performance Section -->
+                <div class="copiers-section">
+                    <div class="section-title">COPIERS PERFORMANCE</div>
+                    <div class="copiers-grid">
+                        <div class="copier-stat">
+                            <div class="copier-stat-value">{{ format_currency(strategy.copiers_year_profit, strategy.currency_code) }}</div>
+                            <div class="copier-stat-label">Year Profit</div>
+                        </div>
+                        <div class="copier-stat">
+                            <div class="copier-stat-value">{{ format_currency(strategy.copiers_month_profit, strategy.currency_code) }}</div>
+                            <div class="copier-stat-label">Month Profit</div>
+                        </div>
+                        <div class="copier-stat">
+                            <div class="copier-stat-value">{{ format_currency(strategy.copiers_total_balance, strategy.currency_code) }}</div>
+                            <div class="copier-stat-label">Total AUM</div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            {% endif %}
+
+            {% if theme.visible_sections.get('signals', True) or theme.visible_sections.get('trades', True) %}
+            <div id="tradesSection" class="page-section {% if not theme.visible_sections.get('overview', True) %}active{% endif %}">
+                <div class="section-title" style="margin-top: 10px;">TRADES</div>
+                <div class="trades-tabs">
+                    {% if theme.visible_sections.get('signals', True) %}
+                    <button id="tabOpen" class="tab-btn active" type="button" onclick="showTradesTab('open')">Open</button>
+                    {% endif %}
+                    {% if theme.visible_sections.get('trades', True) %}
+                    <button id="tabClosed" class="tab-btn {% if not theme.visible_sections.get('signals', True) %}active{% endif %}" type="button" onclick="showTradesTab('closed')">Closed</button>
+                    {% endif %}
+                </div>
+
+                <!-- Closed Trades Date Range Selector -->
+                <div id="closedRangeSelector" class="range-selector" style="display: none;">
+                    <div class="range-label">Closed trades range:</div>
+                    <div class="range-pills">
+                        <a href="/p/{{ portal.slug }}?{% if selected_copier_id %}copier_id={{ selected_copier_id }}&{% endif %}range=7d#trades" class="range-pill {% if closed_trades_range == '7d' %}active{% endif %}">7D</a>
+                        <a href="/p/{{ portal.slug }}?{% if selected_copier_id %}copier_id={{ selected_copier_id }}&{% endif %}range=30d#trades" class="range-pill {% if closed_trades_range == '30d' %}active{% endif %}">30D</a>
+                    </div>
+                </div>
+
+                <!-- Closed Trades Summary Stats -->
+                {% if closed_trades_stats and closed_trades_stats.trades_count > 0 %}
+                <div id="closedStatsRow" class="closed-stats-row" style="display: none;">
+                    <div class="closed-stat-card">
+                        <div class="closed-stat-value">{{ '{:,}'.format(closed_trades_stats.trades_count) }}</div>
+                        <div class="closed-stat-label">Trades</div>
+                    </div>
+                    <div class="closed-stat-card">
+                        <div class="closed-stat-value">{{ '%.1f'|format(closed_trades_stats.win_rate_pct) }}%</div>
+                        <div class="closed-stat-label">Win Rate</div>
+                    </div>
+                    <div class="closed-stat-card">
+                        <div class="closed-stat-value {{ 'positive-pnl' if closed_trades_stats.total_realised_pnl >= 0 else 'negative-pnl' }}">
+                            {{ format_currency(closed_trades_stats.total_realised_pnl, strategy.currency_code) }}
+                        </div>
+                        <div class="closed-stat-label">Total P&L</div>
+                    </div>
+                    <div class="closed-stat-card">
+                        <div class="closed-stat-value {{ 'positive-pnl' if closed_trades_stats.avg_realised_pnl >= 0 else 'negative-pnl' }}">
+                            {{ format_currency(closed_trades_stats.avg_realised_pnl, strategy.currency_code) }}
+                        </div>
+                        <div class="closed-stat-label">Avg P&L</div>
+                    </div>
+                    <div class="closed-stat-card">
+                        <div class="closed-stat-value">
+                            {% if closed_trades_stats.most_common_symbol %}
+                                {{ closed_trades_stats.most_common_symbol }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </div>
+                        <div class="closed-stat-label">Most Traded</div>
+                    </div>
+                    <div class="closed-stat-card">
+                        <div class="closed-stat-value positive-pnl">{{ format_currency(closed_trades_stats.biggest_win, strategy.currency_code) }}</div>
+                        <div class="closed-stat-label">Best</div>
+                    </div>
+                    <div class="closed-stat-card">
+                        <div class="closed-stat-value negative-pnl">{{ format_currency(closed_trades_stats.biggest_loss, strategy.currency_code) }}</div>
+                        <div class="closed-stat-label">Worst</div>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if theme.visible_sections.get('signals', True) %}
+                <div id="panelOpen" class="trades-panel active">
+                    <table class="trades-table">
+                        <thead>
+                            <tr>
+                                <th>Symbol</th>
+                                <th>Direction</th>
+                                <th>Lots</th>
+                                <th>Open Price</th>
+                                <th class="muted">Open Time</th>
+                                <th>PnL</th>
+                            </tr>
+                        </thead>
+                        <tbody id="openTradesBody">
+                            {% if open_signals %}
+                                {% for signal in open_signals %}
+                                <tr>
+                                    <td>{{ signal.get('Instrument', '-') }}</td>
+                                    <td>
+                                        <span class="pill {{ 'buy' if signal.get('Direction', '').lower() == 'buy' else 'sell' }}">
+                                            {{ signal.get('Direction', '-') }}
+                                        </span>
+                                    </td>
+                                    <td>{{ '%.2f'|format(signal.get('Quantity', 0)) }}</td>
+                                    <td>{{ '%.5f'|format(signal.get('OpenPrice', 0)) }}</td>
+                                    <td class="muted">
+                                        {% set open_time = signal.get('OpenTimestamp', '') %}
+                                        {% if open_time %}
+                                            {{ open_time[:16].replace('T', ' ') }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td class="{{ 'positive-pnl' if signal.get('UnrealisedProfit', 0) >= 0 else 'negative-pnl' }}">
+                                        {{ '%+.2f'|format(signal.get('UnrealisedProfit', 0)) }}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="6" class="empty-state">No open positions.</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+
+                {% if theme.visible_sections.get('trades', True) %}
+                <div id="panelClosed" class="trades-panel {% if not theme.visible_sections.get('signals', True) %}active{% endif %}">
+                    <table class="trades-table">
+                        <thead>
+                            <tr>
+                                <th>Symbol</th>
+                                <th>Direction</th>
+                                <th>Lots</th>
+                                <th>Open</th>
+                                <th>Close</th>
+                                <th>PnL</th>
+                            </tr>
+                        </thead>
+                        <tbody id="closedTradesBody">
+                            {% if closed_signals %}
+                                {% for signal in closed_signals %}
+                                <tr>
+                                    <td>{{ signal.get('Instrument', '-') }}</td>
+                                    <td>
+                                        <span class="pill {{ 'buy' if signal.get('Direction', '').lower() == 'buy' else 'sell' }}">
+                                            {{ signal.get('Direction', '-') }}
+                                        </span>
+                                    </td>
+                                    <td>{{ '%.2f'|format(signal.get('Quantity', 0)) }}</td>
+                                    <td class="muted">
+                                        {% set open_time = signal.get('OpenTimestamp', '') %}
+                                        {% if open_time %}
+                                            {{ open_time[:16].replace('T', ' ') }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td class="muted">
+                                        {% set close_time = signal.get('CloseTimestamp', '') %}
+                                        {% if close_time %}
+                                            {{ close_time[:16].replace('T', ' ') }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td class="{{ 'positive-pnl' if signal.get('RealisedProfit', 0) >= 0 else 'negative-pnl' }}">
+                                        {{ '%+.2f'|format(signal.get('RealisedProfit', 0)) }}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="6" class="empty-state">No closed trades in the last 30 days.</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- Copy Strategy Buttons -->
+            {% if selected_copier_id and strategy_id %}
+                <div class="copy-buttons">
+                    <button class="copy-btn" type="button" onclick="openCopyModal()">
+                        {% if is_copying %}Edit Copy{% else %}Copy Strategy{% endif %}
+                    </button>
+                    {% if is_copying %}
+                    <button class="stop-copy-btn" type="button" onclick="openStopModal()">
+                        Stop Copying
+                    </button>
+                    {% endif %}
+                </div>
+            {% endif %}
+
+            <p style="font-size: 10px; color: #95a5a6; margin-top: 20px;">
+                {% if strategy_id %}
+                {% endif %}
+                <a href="/logout" style="color: #7f8c8d; text-decoration: none;">Logout</a>
+            </p>
+
+        </div> <!-- End content-sections -->
+    </div> <!-- End card -->
+
+    <!-- Copy Settings Modal -->
+    <div id="copyModal" class="modal" style="display: none;">
+        <div class="modal-overlay" onclick="closeCopyModal()"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>{% if is_copying %}Edit Copy Settings{% else %}Copy Strategy{% endif %}</h2>
+                <button class="modal-close" type="button" onclick="closeCopyModal()">&times;</button>
+            </div>
+            <form method="POST" action="/copy-strategy">
+                <input type="hidden" name="copier_id" value="{{ selected_copier_id }}">
+                <input type="hidden" name="strategy_id" value="{{ strategy_id }}">
+                <input type="hidden" name="strategy_name" value="{{ strategy.name }}">
+                <input type="hidden" name="source" value="portal">
+
+                <div class="modal-body">
+                    <!-- Trade Size Type -->
+                    <div class="form-group">
+                        <label for="trade_size_type">Trade Sizing Type</label>
+                        <select id="trade_size_type" name="trade_size_type" class="form-control" onchange="updateTradeSizeLabel()" required>
+                            <option value="Fixed" {% if copy_settings and copy_settings.get('TradeSizeType') == 'Fixed' %}selected{% elif not copy_settings %}selected{% endif %}>Fixed</option>
+                            <option value="MirrorSize" {% if copy_settings and copy_settings.get('TradeSizeType') == 'MirrorSize' %}selected{% endif %}>Mirror Size</option>
+                            <option value="MirrorRiskByEquity" {% if copy_settings and copy_settings.get('TradeSizeType') == 'MirrorRiskByEquity' %}selected{% endif %}>Mirror Risk by Equity</option>
+                            <option value="MirrorRiskByBalance" {% if copy_settings and copy_settings.get('TradeSizeType') == 'MirrorRiskByBalance' %}selected{% endif %}>Mirror Risk by Balance</option>
+                        </select>
+                    </div>
+
+                    <!-- Trade Size Value -->
+                    <div class="form-group">
+                        <label for="trade_size_value" id="trade_size_label">
+                            {% if copy_settings and copy_settings.get('TradeSizeType') == 'Fixed' %}Lot Size{% else %}Multiplier{% endif %}
+                        </label>
+                        <input type="number" id="trade_size_value" name="trade_size_value" class="form-control"
+                               min="0.01" step="0.01"
+                               value="{{ copy_settings.get('TradeSizeValue', 1.0) if copy_settings else 1.0 }}" required>
+                    </div>
+
+                    <!-- Copy Existing Open Trades -->
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="is_open_existing"
+                                   {% if copy_settings and copy_settings.get('IsOpenExistingTrades') %}checked{% endif %}>
+                            Copy existing open trades
+                        </label>
+                    </div>
+
+                    <!-- Round Up to Minimum Size -->
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="is_round_up"
+                                   {% if copy_settings and copy_settings.get('IsRoundUpToMinimumSize') %}checked{% endif %}>
+                            Round up to minimum trade size
+                        </label>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="closeCopyModal()">Cancel</button>
+                    <button type="submit" class="btn-primary">{% if is_copying %}Update{% else %}Start Copying{% endif %}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Stop Copying Modal -->
+    {% set stop_strategy_id = request.args.get('stop_strategy_id', strategy_id) %}
+    <div id="stopModal" class="modal" style="display: none;">
+        <div class="modal-overlay" onclick="closeStopModal()"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Stop Copying {{ strategy.name if strategy else 'Strategy' }}?</h2>
+                <button class="modal-close" type="button" onclick="closeStopModal()">&times;</button>
+            </div>
+            <form method="POST" action="/stop-copy">
+                <input type="hidden" name="copier_id" value="{{ selected_copier_id }}">
+                <input type="hidden" name="strategy_id" value="{{ stop_strategy_id }}">
+                <input type="hidden" name="strategy_name" value="{{ strategy.name }}">
+                <input type="hidden" name="source" value="portal">
+
+                <div class="modal-body">
+                    <p style="margin-bottom: 20px; color: #6c757d; font-size: 14px;">
+                        Choose how to handle your existing positions:
+                    </p>
+
+                    <!-- Mode Selection -->
+                    <div class="form-group">
+                        <label class="radio-option">
+                            <input type="radio" name="mode" value="Mirror" checked>
+                            <div class="radio-content">
+                                <div class="radio-label">Mirror (Recommended)</div>
+                                <div class="radio-description">Stop copying but let existing positions close when the strategy closes them. This mirrors the strategy's exit timing.</div>
+                            </div>
+                        </label>
+
+                        <label class="radio-option">
+                            <input type="radio" name="mode" value="Close">
+                            <div class="radio-content">
+                                <div class="radio-label">Close Immediately</div>
+                                <div class="radio-description">Stop copying and close all positions now at market price. May result in slippage.</div>
+                            </div>
+                        </label>
+
+                        <label class="radio-option">
+                            <input type="radio" name="mode" value="Manual">
+                            <div class="radio-content">
+                                <div class="radio-label">Manual</div>
+                                <div class="radio-description">Stop copying and leave positions open for you to manage manually.</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="closeStopModal()">Cancel</button>
+                    <button type="submit" class="btn-danger">Confirm Stop</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    <script>
+        // Portal-specific account selector handler
+        function handleAccountChange() {
+            const selector = document.getElementById('accountSelector');
+            const copierId = selector.value;
+            if (copierId) {
+                // Redirect to portal URL with selected account
+                window.location.href = '/p/{{ portal.slug }}?copier_id=' + copierId;
+            }
+        }
+    </script>
+</body>
+</html>

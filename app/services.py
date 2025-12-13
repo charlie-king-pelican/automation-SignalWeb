@@ -1287,3 +1287,133 @@ def delete_copier(token, profile_id, copier_id):
         return False, resp.status_code, resp.text
     except Exception as e:
         return False, 0, str(e)
+
+
+# ==========================================
+# PORTAL SERVICES
+# ==========================================
+
+def get_strategy_by_id(profile_id, strategy_id, token):
+    """
+    Get strategy data by explicit profile_id and strategy_id (not via discover endpoint).
+    Used for portals where both IDs are already known.
+
+    Args:
+        profile_id: Profile ID that owns the strategy
+        strategy_id: Strategy ID to fetch
+        token: Access token for API authentication (user session token)
+
+    Returns dict with same structure as get_top_strategy().
+    """
+    headers = {
+        'Authorization': f"Bearer {token}",
+        'Content-Type': 'application/json'
+    }
+
+    # Default result structure (same as get_top_strategy)
+    result = {
+        'name': 'Unknown',
+        'copiers': 0,
+        'return_val': 0.0,
+        'strategy_id': strategy_id,
+        'inception_date': None,
+        'performance_fee': 0.0,
+        'total_trades': 0,
+        'min_per_month': 0,
+        'max_per_month': 0,
+        'wins': 0,
+        'losses': 0,
+        'win_rate': 0,
+        'realised_pnl': 0,
+        'unrealised_pnl': 0,
+        'max_drawdown': 0,
+        'balance': 0,
+        'equity': 0,
+        'credit': 0,
+        'leverage': 0,
+        'copiers_year_profit': 0,
+        'copiers_month_profit': 0,
+        'copiers_total_balance': 0,
+        'currency_code': 'USD',
+        'unauthorized': False
+    }
+
+    try:
+        # Fetch basic strategy info
+        strategy_resp = requests.get(
+            f"{API_BASE_URL}/api/strategies/{strategy_id}",
+            headers=headers,
+            timeout=REQUEST_TIMEOUT
+        )
+
+        if strategy_resp.status_code == 401:
+            result['unauthorized'] = True
+            return result
+
+        if strategy_resp.status_code == 200:
+            strategy_data = strategy_resp.json()
+            result['name'] = strategy_data.get('Name', 'Unknown')
+            result['copiers'] = strategy_data.get('NumCopiers', 0)
+            fee = strategy_data.get('Fee')
+            result['performance_fee'] = (fee * 100) if fee is not None else 0.0
+
+        # Fetch detailed stats
+        stats_resp = requests.get(
+            f"{API_BASE_URL}/api/strategies/{strategy_id}/stats",
+            headers=headers,
+            params={'wl': WHITE_LABEL_ID},
+            timeout=REQUEST_TIMEOUT
+        )
+
+        if stats_resp.status_code == 200:
+            stats_data = stats_resp.json()
+
+            # Extract profitability
+            profitability = stats_data.get('Profitability', {}).get('Inception', {})
+            return_pct = profitability.get('Return', 0)
+            result['return_val'] = return_pct * 100
+
+            # Extract inception date
+            inception_str = stats_data.get('Inception')
+            if inception_str:
+                inception_dt = datetime.fromisoformat(inception_str.replace('Z', '+00:00'))
+                result['inception_date'] = inception_dt.strftime('%B %d, %Y')
+
+            # Extract trade statistics
+            trades_data = stats_data.get('Trades', {}).get('Inception', {})
+            result['total_trades'] = trades_data.get('Total', 0)
+            result['min_per_month'] = trades_data.get('MinPerMonth', 0)
+            result['max_per_month'] = trades_data.get('MaxPerMonth', 0)
+            result['wins'] = trades_data.get('Wins', 0)
+            result['losses'] = trades_data.get('Losses', 0)
+
+            # Calculate win rate
+            if result['total_trades'] > 0:
+                result['win_rate'] = (result['wins'] / result['total_trades']) * 100
+
+            # Extract profitability stats
+            result['realised_pnl'] = profitability.get('RealisedPnl', 0)
+            result['unrealised_pnl'] = profitability.get('UnrealisedPnl', 0)
+            result['max_drawdown'] = abs(profitability.get('MaxDrawdown', 0)) * 100
+
+            # Extract account status
+            status_data = stats_data.get('Status', {})
+            result['balance'] = status_data.get('Balance', 0)
+            result['credit'] = status_data.get('Credit', 0)
+            result['leverage'] = status_data.get('Leverage', 0)
+            result['equity'] = result['balance'] + result['unrealised_pnl']
+
+            # Extract copiers performance
+            copiers_profit_data = stats_data.get('CopiersProfit', {})
+            result['copiers_year_profit'] = copiers_profit_data.get('Year', 0)
+            result['copiers_month_profit'] = copiers_profit_data.get('Month', 0)
+
+            copiers_balance_data = stats_data.get('CopiersBalance', {})
+            result['copiers_total_balance'] = copiers_balance_data.get('Balance', 0)
+
+            result['currency_code'] = stats_data.get('CurrencyCode', 'USD')
+
+    except Exception as e:
+        result['name'] = "Connection Error"
+
+    return result

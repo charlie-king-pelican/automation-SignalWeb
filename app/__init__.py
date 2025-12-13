@@ -28,6 +28,21 @@ def create_app():
     # Dynamic configuration for Cloud Run deployment
     app.config['BASE_URL'] = os.environ.get('BASE_URL', 'https://localhost')
 
+    # Database configuration
+    instance_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'instance')
+    os.makedirs(instance_path, exist_ok=True)
+    db_path = os.path.join(instance_path, 'portals.db')
+    app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+    # Initialize database
+    from app.models import db
+    db.init_app(app)
+
+    # Create tables if they don't exist
+    with app.app_context():
+        db.create_all()
+
     # Register routes
     from app.routes import register_routes
     register_routes(app)
