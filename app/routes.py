@@ -151,10 +151,32 @@ def register_routes(app):
         if profile_name is None:
             return "Error fetching accounts data", 500
 
+        # Fetch brokers for the Link Account modal
+        brokers = services.get_brokers(token)
+
+        # Get default servers for first broker (if only one broker exists)
+        default_servers = []
+        if len(brokers) == 1:
+            broker_detail = services.get_broker_detail(token, brokers[0].get('Code'))
+            if broker_detail:
+                default_servers = broker_detail.get('Servers', [])
+
+        # Check for flash messages in query params
+        link_success = request.args.get('link_success')
+        link_error = request.args.get('link_error')
+        unlink_success = request.args.get('unlink_success')
+        unlink_error = request.args.get('unlink_error')
+
         response = make_response(render_template(
             'accounts.html',
             profile_name=profile_name,
             copiers=copiers_with_stats,
+            brokers=brokers,
+            default_servers=default_servers,
+            link_success=link_success,
+            link_error=link_error,
+            unlink_success=unlink_success,
+            unlink_error=unlink_error,
             format_currency=services.format_currency
         ))
         return add_no_cache_headers(response)
@@ -456,3 +478,92 @@ def register_routes(app):
             format_currency=services.format_currency
         ))
         return add_no_cache_headers(response)
+
+    @app.route('/accounts/servers')
+    def get_servers():
+        """AJAX endpoint to fetch servers for a selected broker."""
+        from flask import jsonify
+
+        token = session.get('access_token')
+        if not token:
+            return jsonify({'error': 'Not authenticated'}), 401
+
+        broker_code = request.args.get('brokerCode')
+        if not broker_code:
+            return jsonify({'error': 'brokerCode parameter required'}), 400
+
+        broker_detail = services.get_broker_detail(token, broker_code)
+        if broker_detail is None:
+            return jsonify({'error': 'Broker not found'}), 404
+
+        servers = broker_detail.get('Servers', [])
+        return jsonify({'servers': servers})
+
+    @app.route('/accounts/link', methods=['POST'])
+    def link_account():
+        """Handle link account form submission."""
+        token = session.get('access_token')
+        if not token:
+            return redirect(url_for('index'))
+
+        # Get profile ID
+        profile_id = services.get_profile_id(token)
+        if not profile_id:
+            return redirect(url_for('accounts', link_error='Could not retrieve profile'))
+
+        # Get form data
+        account_name = request.form.get('account_name', 'My Account')
+        broker_code = request.form.get('broker_code')
+        server_code = request.form.get('server_code')
+        username = request.form.get('username')
+        password = request.form.get('password')
+        currency_code = request.form.get('currency_code', '').strip()
+
+        # Validation
+        if not broker_code or not server_code or not username or not password:
+            return redirect(url_for('accounts', link_error='All fields except currency are required'))
+
+        # Build payload
+        payload = {
+            'name': account_name,
+            'connection': {
+                'brokerCode': broker_code,
+                'serverCode': server_code,
+                'username': username,
+                'password': password
+            }
+        }
+
+        # Add optional currency code
+        if currency_code:
+            payload['connection']['currencyCode'] = currency_code
+
+        # Create copier
+        success, result = services.create_copier(token, profile_id, payload)
+
+        if success:
+            return redirect(url_for('accounts', link_success='Account linked successfully'))
+        else:
+            error_msg = result if isinstance(result, str) else 'Failed to link account'
+            return redirect(url_for('accounts', link_error=error_msg))
+
+    @app.route('/accounts/<copier_id>/unlink', methods=['POST'])
+    def unlink_account(copier_id):
+        """Handle unlink account request."""
+        token = session.get('access_token')
+        if not token:
+            return redirect(url_for('index'))
+
+        # Get profile ID
+        profile_id = services.get_profile_id(token)
+        if not profile_id:
+            return redirect(url_for('accounts', unlink_error='Could not retrieve profile'))
+
+        # Delete copier
+        success, status_code, error = services.delete_copier(token, profile_id, copier_id)
+
+        if success:
+            return redirect(url_for('accounts', unlink_success='Account unlinked successfully'))
+        else:
+            error_msg = error if error else f'Failed to unlink account (status: {status_code})'
+            return redirect(url_for('accounts', unlink_error=error_msg))

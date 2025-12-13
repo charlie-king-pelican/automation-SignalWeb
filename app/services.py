@@ -1159,3 +1159,131 @@ def delete_copy_settings(copier_id, strategy_id, token, mode='Mirror'):
         return False, resp.status_code, resp.text
     except Exception as e:
         return False, 0, str(e)
+
+
+def get_brokers(token):
+    """
+    Get list of all available brokers.
+
+    Args:
+        token: Access token for API authentication
+
+    Returns:
+        list: List of broker dicts with Code and Name fields, or empty list on error
+    """
+    headers = {
+        'Authorization': f"Bearer {token}",
+        'Content-Type': 'application/json'
+    }
+
+    try:
+        resp = requests.get(
+            f"{API_BASE_URL}/api/brokers",
+            headers=headers,
+            timeout=REQUEST_TIMEOUT
+        )
+        if resp.status_code == 200:
+            return resp.json()
+        return []
+    except Exception:
+        return []
+
+
+def get_broker_detail(token, broker_code):
+    """
+    Get detailed broker information including available servers.
+
+    Args:
+        token: Access token for API authentication
+        broker_code: Broker code (e.g., 'Pepperstone')
+
+    Returns:
+        dict: Broker detail with Servers list, or None on error
+    """
+    headers = {
+        'Authorization': f"Bearer {token}",
+        'Content-Type': 'application/json'
+    }
+
+    try:
+        resp = requests.get(
+            f"{API_BASE_URL}/api/brokers/{broker_code}",
+            headers=headers,
+            timeout=REQUEST_TIMEOUT
+        )
+        if resp.status_code == 200:
+            return resp.json()
+        return None
+    except Exception:
+        return None
+
+
+def create_copier(token, profile_id, payload):
+    """
+    Link a new copier account (MetaTrader account) to the profile.
+
+    Args:
+        token: Access token for API authentication
+        profile_id: Profile ID
+        payload: Dict with structure:
+            {
+                "name": "Account Label",
+                "connection": {
+                    "brokerCode": "Pepperstone",
+                    "serverCode": "PepperstoneEdge01",
+                    "username": "12345678",
+                    "password": "password123",
+                    "currencyCode": "USD"  # optional
+                }
+            }
+
+    Returns:
+        tuple: (success: bool, response_data or error_message)
+    """
+    headers = {
+        'Authorization': f"Bearer {token}",
+        'Content-Type': 'application/json'
+    }
+
+    try:
+        resp = requests.post(
+            f"{API_BASE_URL}/api/profiles/{profile_id}/copiers",
+            headers=headers,
+            json=payload,
+            timeout=REQUEST_TIMEOUT
+        )
+        if resp.status_code in [200, 201]:
+            return True, resp.json()
+        return False, resp.text
+    except Exception as e:
+        return False, str(e)
+
+
+def delete_copier(token, profile_id, copier_id):
+    """
+    Unlink a copier account from the profile.
+
+    Args:
+        token: Access token for API authentication
+        profile_id: Profile ID
+        copier_id: Copier account ID to unlink
+
+    Returns:
+        tuple: (success: bool, status_code: int, error_message: str or None)
+    """
+    headers = {
+        'Authorization': f"Bearer {token}",
+        'Content-Type': 'application/json'
+    }
+
+    try:
+        resp = requests.delete(
+            f"{API_BASE_URL}/api/profiles/{profile_id}/copiers/{copier_id}",
+            headers=headers,
+            timeout=REQUEST_TIMEOUT
+        )
+        if resp.status_code in [200, 204]:
+            return True, resp.status_code, None
+        return False, resp.status_code, resp.text
+    except Exception as e:
+        return False, 0, str(e)

@@ -644,6 +644,78 @@ body {
     display: none;
 }
 
+/* Link Account Button */
+.link-account-btn {
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    background-color: #2962ff;
+    color: white;
+    box-shadow: 0 3px 12px rgba(41, 98, 255, 0.3);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.link-account-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(41, 98, 255, 0.4);
+}
+
+/* Unlink Button */
+.unlink-btn {
+    border: 1px solid #e0e0e0;
+    background: white;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    color: #c62828;
+    transition: all 0.2s;
+}
+
+.unlink-btn:hover {
+    background: #fff5f5;
+    border-color: #c62828;
+}
+
+/* Flash Messages */
+.flash-message {
+    padding: 14px 20px;
+    margin: 20px auto;
+    max-width: 650px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    text-align: center;
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.flash-success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.flash-error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
 /* Modal Styles */
 .modal {
     position: fixed;

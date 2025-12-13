@@ -17,8 +17,26 @@
     </div>
 
     <div class="header">
-        <h1>{{ profile_name }}'s Accounts</h1>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h1>{{ profile_name }}'s Accounts</h1>
+            <button class="link-account-btn" type="button" onclick="openLinkModal()">+ Link account</button>
+        </div>
     </div>
+
+    <!-- Flash Messages -->
+    {% if link_success %}
+    <div class="flash-message flash-success">{{ link_success }}</div>
+    {% endif %}
+    {% if link_error %}
+    <div class="flash-message flash-error">{{ link_error }}</div>
+    {% endif %}
+    {% if unlink_success %}
+    <div class="flash-message flash-success">{{ unlink_success }}</div>
+    {% endif %}
+    {% if unlink_error %}
+    <div class="flash-message flash-error">{{ unlink_error }}</div>
+    {% endif %}
+
     <div class="container">
         {% if not copiers %}
         <div class="no-data">No copier accounts found</div>
@@ -34,13 +52,18 @@
 
         <div class="account-card">
             <div class="account-info">
-                <div class="account-name">{{ copier.name }}</div>
-                <div class="account-details">
-                    <span>{{ copier.server }}</span>
-                    <span>#{{ copier.username }}</span>
-                    {% if leverage %}
-                    <span style="color: #7f8c8d; font-size: 12px;">1:{{ leverage }}</span>
-                    {% endif %}
+                <div style="display: flex; justify-content: space-between; align-items: start;">
+                    <div>
+                        <div class="account-name">{{ copier.name }}</div>
+                        <div class="account-details">
+                            <span>{{ copier.server }}</span>
+                            <span>#{{ copier.username }}</span>
+                            {% if leverage %}
+                            <span style="color: #7f8c8d; font-size: 12px;">1:{{ leverage }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <button class="unlink-btn" type="button" onclick="confirmUnlink('{{ copier.id }}', '{{ copier.name }}')">Unlink</button>
                 </div>
             </div>
             <div class="account-stats">
@@ -65,5 +88,116 @@
         {% endfor %}
         {% endif %}
     </div>
+
+    <!-- Link Account Modal -->
+    <div id="linkModal" class="modal" style="display: none;">
+        <div class="modal-overlay" onclick="closeLinkModal()"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Link Account</h2>
+                <button class="modal-close" type="button" onclick="closeLinkModal()">&times;</button>
+            </div>
+            <form method="POST" action="/accounts/link">
+                <div class="modal-body">
+                    <!-- Account Name -->
+                    <div class="form-group">
+                        <label for="account_name">Account Label (optional)</label>
+                        <input type="text" id="account_name" name="account_name" class="form-control"
+                               placeholder="My Account" value="My Account">
+                    </div>
+
+                    <!-- Broker Selection -->
+                    {% if brokers|length > 1 %}
+                    <div class="form-group">
+                        <label for="broker_code">Broker</label>
+                        <select id="broker_code" name="broker_code" class="form-control" onchange="handleBrokerChange()" required>
+                            <option value="" disabled selected>Select broker</option>
+                            {% for broker in brokers %}
+                            <option value="{{ broker.Code }}">{{ broker.Name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% else %}
+                    <!-- Only one broker - auto-select and hide -->
+                    <input type="hidden" id="broker_code" name="broker_code" value="{{ brokers[0].Code if brokers else '' }}">
+                    <div class="form-group">
+                        <label>Broker</label>
+                        <div style="padding: 10px; background: #f8f9fa; border-radius: 4px; color: #6c757d;">
+                            {{ brokers[0].Name if brokers else 'No broker available' }}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Server Selection -->
+                    <div class="form-group">
+                        <label for="server_code">Server</label>
+                        <select id="server_code" name="server_code" class="form-control" required>
+                            <option value="" disabled selected>Select server</option>
+                            {% for server in default_servers %}
+                            <option value="{{ server.Code }}">{{ server.Name }} ({{ server.Vendor }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Account Number -->
+                    <div class="form-group">
+                        <label for="username">Account Number</label>
+                        <input type="text" id="username" name="username" class="form-control"
+                               placeholder="12345678" required>
+                    </div>
+
+                    <!-- Password -->
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" name="password" class="form-control"
+                               placeholder="Your trading account password" required>
+                        <small style="color: #7f8c8d; font-size: 12px; margin-top: 4px; display: block;">
+                            Your password is sent securely and not stored anywhere.
+                        </small>
+                    </div>
+
+                    <!-- Currency Code (Optional) -->
+                    <div class="form-group">
+                        <label for="currency_code">Currency Code (optional)</label>
+                        <input type="text" id="currency_code" name="currency_code" class="form-control"
+                               placeholder="USD" maxlength="3">
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="closeLinkModal()">Cancel</button>
+                    <button type="submit" class="btn-primary">Link Account</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Unlink Confirmation Modal -->
+    <div id="unlinkModal" class="modal" style="display: none;">
+        <div class="modal-overlay" onclick="closeUnlinkModal()"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Unlink Account?</h2>
+                <button class="modal-close" type="button" onclick="closeUnlinkModal()">&times;</button>
+            </div>
+            <form id="unlinkForm" method="POST" action="">
+                <div class="modal-body">
+                    <p style="margin-bottom: 20px; color: #6c757d; font-size: 14px;">
+                        Are you sure you want to unlink <strong id="unlinkAccountName"></strong>?
+                    </p>
+                    <p style="margin-bottom: 0; color: #c62828; font-size: 13px;">
+                        This will remove the account from your dashboard. Any active copy trading relationships will be stopped.
+                    </p>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="closeUnlinkModal()">Cancel</button>
+                    <button type="submit" class="btn-primary" style="background: #c62828;">Unlink Account</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
 </html>

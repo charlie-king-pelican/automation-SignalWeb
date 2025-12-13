@@ -164,6 +164,122 @@ function cleanUrlParams(paramsToRemove) {
 }
 
 /**
+ * Open the link account modal
+ */
+function openLinkModal() {
+    const modal = document.getElementById('linkModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+/**
+ * Close the link account modal
+ */
+function closeLinkModal() {
+    const modal = document.getElementById('linkModal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+}
+
+/**
+ * Open the unlink confirmation modal
+ */
+function openUnlinkModal() {
+    const modal = document.getElementById('unlinkModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+/**
+ * Close the unlink confirmation modal
+ */
+function closeUnlinkModal() {
+    const modal = document.getElementById('unlinkModal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+}
+
+/**
+ * Confirm unlink action - shows modal with account details
+ * @param {string} copierId - The copier account ID
+ * @param {string} accountName - The account name to display
+ */
+function confirmUnlink(copierId, accountName) {
+    const form = document.getElementById('unlinkForm');
+    const nameDisplay = document.getElementById('unlinkAccountName');
+
+    if (form && nameDisplay) {
+        // Set the form action to the unlink route for this copier
+        form.action = '/accounts/' + encodeURIComponent(copierId) + '/unlink';
+
+        // Display the account name in the confirmation message
+        nameDisplay.textContent = accountName;
+
+        // Open the modal
+        openUnlinkModal();
+    }
+}
+
+/**
+ * Handle broker selection change - dynamically fetch servers
+ */
+function handleBrokerChange() {
+    const brokerSelect = document.getElementById('broker_code');
+    const serverSelect = document.getElementById('server_code');
+
+    if (!brokerSelect || !serverSelect) return;
+
+    const brokerCode = brokerSelect.value;
+
+    if (!brokerCode) {
+        // Clear server options
+        serverSelect.innerHTML = '<option value="" disabled selected>Select broker first</option>';
+        return;
+    }
+
+    // Show loading state
+    serverSelect.innerHTML = '<option value="" disabled selected>Loading servers...</option>';
+    serverSelect.disabled = true;
+
+    // Fetch servers for selected broker
+    fetch('/accounts/servers?brokerCode=' + encodeURIComponent(brokerCode))
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to fetch servers');
+            }
+            return response.json();
+        })
+        .then(data => {
+            const servers = data.servers || [];
+
+            // Rebuild server dropdown
+            serverSelect.innerHTML = '<option value="" disabled selected>Select server</option>';
+
+            servers.forEach(server => {
+                const option = document.createElement('option');
+                option.value = server.Code;
+                option.textContent = server.Name + ' (' + server.Vendor + ')';
+                serverSelect.appendChild(option);
+            });
+
+            serverSelect.disabled = false;
+        })
+        .catch(error => {
+            console.error('Error fetching servers:', error);
+            serverSelect.innerHTML = '<option value="" disabled selected>Error loading servers</option>';
+            serverSelect.disabled = false;
+        });
+}
+
+/**
  * Initialize the dashboard on page load
  * Restores saved tab selection from localStorage or URL hash
  * Handles auto-open modal query parameters
@@ -195,4 +311,9 @@ window.addEventListener('DOMContentLoaded', () => {
         openStopModal();
         cleanUrlParams(['open_stop_modal', 'stop_strategy_id']);
     }
+
+    // Clean up flash message query params after a short delay
+    setTimeout(() => {
+        cleanUrlParams(['link_success', 'link_error', 'unlink_success', 'unlink_error']);
+    }, 100);
 });
