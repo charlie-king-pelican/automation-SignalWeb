@@ -11,6 +11,13 @@ body {
     padding: 20px;
 }
 
+/* Admin pages override - remove flexbox centering for full-width layout */
+body.admin-page {
+    display: block;
+    padding: 0;
+    min-height: 100vh;
+}
+
 /* Login Page Styles */
 .login-card {
     background: white;

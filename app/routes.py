@@ -634,7 +634,7 @@ def register_routes(app):
         if not token:
             # Save the requested URL to redirect back after login
             session['next_url'] = request.url
-            return redirect(url_for('index'))  # Will redirect to login page
+            return redirect(url_for('login'))  # Initiate OAuth flow
 
         # Fetch user profile and accounts (needed for copy functionality)
         profile_info = services.get_profile_info(token)
@@ -815,6 +815,10 @@ def register_routes(app):
 
         from app.models import Portal, db
         portal = Portal.query.get_or_404(portal_id)
+
+        # Ensure theme_json is never None (for portals created before default was added)
+        if portal.theme_json is None:
+            portal.theme_json = '{}'
 
         if request.method == 'POST':
             visible_sections = {

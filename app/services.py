@@ -1370,7 +1370,7 @@ def get_strategy_by_id(profile_id, strategy_id, token):
 
             # Extract profitability
             profitability = stats_data.get('Profitability', {}).get('Inception', {})
-            return_pct = profitability.get('Return', 0)
+            return_pct = profitability.get('RealisedReturn', 0)
             result['return_val'] = return_pct * 100
 
             # Extract inception date

@@ -22,9 +22,13 @@
         .admin-nav a {
             color: white;
             text-decoration: none;
-            padding: 8px 16px;
+            padding: 10px 20px;
             background: #555;
             border-radius: 4px;
+            font-size: 14px;
+            line-height: 1.4;
+            display: inline-flex;
+            align-items: center;
         }
         .admin-nav a:hover {
             background: #666;
@@ -136,7 +140,7 @@
         }
     </style>
 </head>
-<body>
+<body class="admin-page">
     <div class="admin-nav">
         <h1>{% if portal %}Edit{% else %}Create{% endif %} Portal</h1>
         <a href="{{ url_for('admin_portals') }}">← Back to Portals</a>
