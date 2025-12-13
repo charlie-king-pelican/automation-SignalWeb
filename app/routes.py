@@ -6,8 +6,16 @@ All HTML rendering is done via templates - no inline HTML strings.
 import os
 import secrets
 import json
+from datetime import datetime
+from collections import deque
 from flask import render_template, redirect, request, url_for, session, make_response
 from app import services
+
+# ==========================================
+# DEBUG LOGGING - In-Memory Ring Buffer
+# ==========================================
+# Stores last 200 copy attempts for debugging
+copy_debug_logs = deque(maxlen=200)
 
 
 def add_no_cache_headers(response):
@@ -169,6 +177,164 @@ def register_routes(app):
     def debug_routes():
         return "<br>".join(sorted(str(r) for r in app.url_map.iter_rules()))
 
+    @app.route('/debug/copy-logs')
+    def debug_copy_logs():
+        """Display in-memory debug logs for copy attempts."""
+        from flask import jsonify
+
+        # Option to return JSON
+        if request.args.get('format') == 'json':
+            return jsonify(list(copy_debug_logs))
+
+        # Otherwise return HTML table
+        html = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Copy Debug Logs</title>
+            <style>
+                body { font-family: monospace; padding: 20px; background: #f5f5f5; }
+                h1 { color: #333; }
+                .controls { margin-bottom: 20px; }
+                .controls a {
+                    padding: 8px 16px;
+                    background: #2962ff;
+                    color: white;
+                    text-decoration: none;
+                    border-radius: 4px;
+                    margin-right: 10px;
+                }
+                .controls a:hover { opacity: 0.8; }
+                table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    background: white;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                }
+                th, td {
+                    padding: 12px;
+                    text-align: left;
+                    border-bottom: 1px solid #ddd;
+                }
+                th {
+                    background: #2962ff;
+                    color: white;
+                    position: sticky;
+                    top: 0;
+                }
+                tr:hover { background: #f9f9f9; }
+                .success { color: #155724; font-weight: bold; }
+                .error { color: #721c24; font-weight: bold; }
+                .modal-copy { color: #0066cc; }
+                .modal-edit { color: #cc6600; }
+                pre {
+                    max-width: 400px;
+                    overflow: auto;
+                    background: #f8f8f8;
+                    padding: 4px 8px;
+                    border-radius: 3px;
+                    font-size: 11px;
+                }
+                .empty {
+                    text-align: center;
+                    padding: 40px;
+                    color: #999;
+                }
+            </style>
+        </head>
+        <body>
+            <h1>🔍 Copy Debug Logs (Last 200)</h1>
+            <div class="controls">
+                <a href="/debug/copy-logs">Refresh</a>
+                <a href="/debug/copy-logs?format=json">View as JSON</a>
+                <a href="/">Back to Dashboard</a>
+            </div>
+        """
+
+        if not copy_debug_logs:
+            html += '<div class="empty">No copy attempts logged yet. Try copying a strategy to see debug info here.</div>'
+        else:
+            html += """
+            <table>
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Copier</th>
+                        <th>Strategy</th>
+                        <th>Source</th>
+                        <th>Modal</th>
+                        <th>Already Copying?</th>
+                        <th>Action</th>
+                        <th>API Success</th>
+                        <th>API Result</th>
+                        <th>Redirect Params</th>
+                    </tr>
+                </thead>
+                <tbody>
+            """
+
+            # Reverse to show newest first
+            for entry in reversed(list(copy_debug_logs)):
+                timestamp = entry.get('timestamp', 'N/A')
+                copier_id = entry.get('copier_id', 'N/A')
+                strategy_id = entry.get('strategy_id', 'N/A')
+                source = entry.get('source', 'N/A')
+                modal_type = entry.get('modal_type', 'N/A')
+                already_copying = entry.get('already_copying')
+                action_path = entry.get('action_path', 'N/A')
+
+                api_result = entry.get('api_result', {})
+                api_success = api_result.get('success')
+                result_summary = api_result.get('result_summary', 'N/A')
+
+                redirect_info = entry.get('redirect', {})
+                redirect_params = redirect_info.get('params', {})
+
+                # Error handling
+                if 'error' in entry:
+                    error_msg = entry['error']
+                    html += f"""
+                    <tr>
+                        <td>{timestamp}</td>
+                        <td colspan="9" class="error">ERROR: {error_msg}</td>
+                    </tr>
+                    """
+                    continue
+
+                # Success/failure styling
+                success_class = 'success' if api_success else 'error'
+                success_text = '✓ TRUE' if api_success else '✗ FALSE'
+
+                already_copying_text = '✓ Yes' if already_copying else '✗ No'
+                modal_class = f'modal-{modal_type}'
+
+                html += f"""
+                <tr>
+                    <td>{timestamp}</td>
+                    <td>{copier_id}</td>
+                    <td>{strategy_id}</td>
+                    <td>{source}</td>
+                    <td class="{modal_class}">{modal_type}</td>
+                    <td>{already_copying_text}</td>
+                    <td><strong>{action_path}</strong></td>
+                    <td class="{success_class}">{success_text}</td>
+                    <td><pre>{result_summary}</pre></td>
+                    <td><pre>{json.dumps(redirect_params, indent=2)}</pre></td>
+                </tr>
+                """
+
+            html += """
+                </tbody>
+            </table>
+            """
+
+        html += """
+        </body>
+        </html>
+        """
+
+        return html
+
     @app.route('/accounts')
     def accounts():
         """Display all copier accounts with balance and equity."""
@@ -272,8 +438,24 @@ def register_routes(app):
     @app.route('/copy-strategy', methods=['POST'])
     def copy_strategy():
         """Handle copy strategy form submission (create or update copy settings)."""
+        # Initialize debug log entry
+        debug_entry = {
+            'timestamp': datetime.utcnow().isoformat(),
+            'copier_id': None,
+            'strategy_id': None,
+            'portal_slug': None,
+            'source': None,
+            'modal_type': None,
+            'already_copying': None,
+            'action_path': None,
+            'api_result': {},
+            'redirect': {}
+        }
+
         token = session.get('access_token')
         if not token:
+            debug_entry['error'] = 'No access token'
+            copy_debug_logs.append(debug_entry)
             return redirect(url_for('index'))
 
         # Get form data
@@ -286,16 +468,33 @@ def register_routes(app):
         is_round_up = request.form.get('is_round_up') == 'on'
         source = request.form.get('source', 'dashboard')  # 'dashboard', 'copying', or 'portal'
         portal_slug = request.form.get('portal_slug')  # For portal tracking
+        modal_type = request.form.get('modal_type', 'copy')  # 'copy' or 'edit'
+
+        # Update debug entry
+        debug_entry.update({
+            'copier_id': copier_id,
+            'strategy_id': strategy_id,
+            'portal_slug': portal_slug,
+            'source': source,
+            'modal_type': modal_type
+        })
 
         # Validation
         if not copier_id or not strategy_id:
             error_msg = 'Missing account or strategy'
+            debug_entry['error'] = 'Validation failed: ' + error_msg
+            debug_entry['redirect'] = {
+                'url': f'{source} page',
+                'params': {'copy_error': error_msg, 'modal': modal_type}
+            }
+            copy_debug_logs.append(debug_entry)
+
             if source == 'portal' and portal_slug:
-                return redirect(url_for('portal_view', slug=portal_slug, copy_error=error_msg))
+                return redirect(url_for('portal_view', slug=portal_slug, copy_error=error_msg, modal=modal_type))
             elif source == 'copying':
-                return redirect(url_for('copying', copy_error=error_msg))
+                return redirect(url_for('copying', copy_error=error_msg, modal=modal_type))
             else:
-                return redirect(url_for('index', copy_error=error_msg))
+                return redirect(url_for('index', copy_error=error_msg, modal=modal_type))
 
         # Build settings payload
         settings = {
@@ -307,28 +506,40 @@ def register_routes(app):
 
         # Detect if already copying (GET first)
         copy_settings, status_code = services.get_copy_settings(copier_id, strategy_id, token)
+        debug_entry['already_copying'] = (status_code == 200)
 
+        # Determine action and execute API call
         if status_code == 200:
             # Already copying - use PUT
-            success, result = services.update_copy_settings(copier_id, strategy_id, token, settings)
+            debug_entry['action_path'] = 'UPDATE_COPY'
+            api_success, api_result = services.update_copy_settings(copier_id, strategy_id, token, settings)
             success_msg = 'Copy settings updated successfully'
-            error_msg = f'Failed to update copy settings'
+            error_msg_base = 'Failed to update copy settings'
         else:
             # Not copying yet - use POST
-            success, result = services.create_copy_settings(copier_id, strategy_id, token, settings)
+            debug_entry['action_path'] = 'CREATE_COPY'
+            api_success, api_result = services.create_copy_settings(copier_id, strategy_id, token, settings)
             success_msg = 'Copy started successfully'
-            error_msg = f'Failed to start copying'
+            error_msg_base = 'Failed to start copying'
 
-        # Add error details if available
-        if not success and result:
-            # Truncate long error messages
-            error_detail = str(result)[:200]
-            error_msg = f'{error_msg} - {error_detail}'
+        # CRITICAL: Do not overwrite api_success - it is the source of truth
+        # Record API result in debug log
+        debug_entry['api_result'] = {
+            'success': api_success,
+            'result_summary': str(api_result)[:200] if api_result else None
+        }
+
+        # Build final messages
+        if api_success:
+            final_message = success_msg
+        else:
+            # Add error details if available
+            error_detail = str(api_result)[:200] if api_result else 'Unknown error'
+            final_message = f'{error_msg_base} - {error_detail}'
 
         # Track successful copies from portals
-        if success and source == 'portal' and portal_slug:
+        if api_success and source == 'portal' and portal_slug:
             from app.models import Portal, PortalEvent, db
-            from datetime import datetime
 
             portal = Portal.query.filter_by(slug=portal_slug).first()
             if portal:
@@ -352,24 +563,39 @@ def register_routes(app):
 
                 db.session.commit()
 
-        # Redirect based on source
+        # Build redirect with explicit modal targeting
         if source == 'copying':
-            if success:
-                return redirect(url_for('copying', copy_success=success_msg))
+            if api_success:
+                redirect_url = url_for('copying', copy_success=final_message, modal=modal_type)
             else:
-                return redirect(url_for('copying', copy_error=error_msg))
+                redirect_url = url_for('copying', copy_error=final_message, modal=modal_type)
         elif source == 'portal' and portal_slug:
-            # Portal
-            if success:
-                return redirect(url_for('portal_view', slug=portal_slug, copier_id=copier_id, copy_success=success_msg))
+            if api_success:
+                redirect_url = url_for('portal_view', slug=portal_slug, copier_id=copier_id,
+                                      copy_success=final_message, modal=modal_type)
             else:
-                return redirect(url_for('portal_view', slug=portal_slug, copier_id=copier_id, copy_error=error_msg))
+                redirect_url = url_for('portal_view', slug=portal_slug, copier_id=copier_id,
+                                      copy_error=final_message, modal=modal_type)
         else:
             # Dashboard
-            if success:
-                return redirect(url_for('index', copier_id=copier_id, copy_success=success_msg))
+            if api_success:
+                redirect_url = url_for('index', copier_id=copier_id, copy_success=final_message, modal=modal_type)
             else:
-                return redirect(url_for('index', copier_id=copier_id, copy_error=error_msg))
+                redirect_url = url_for('index', copier_id=copier_id, copy_error=final_message, modal=modal_type)
+
+        # Log final redirect decision
+        debug_entry['redirect'] = {
+            'url': redirect_url,
+            'params': {
+                'copy_success' if api_success else 'copy_error': final_message,
+                'modal': modal_type
+            }
+        }
+
+        # Append to debug logs
+        copy_debug_logs.append(debug_entry)
+
+        return redirect(redirect_url)
 
     @app.route('/copying')
     def copying():
