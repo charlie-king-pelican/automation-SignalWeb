@@ -29,11 +29,12 @@ def create_app():
     app.config['BASE_URL'] = os.environ.get('BASE_URL', 'https://localhost')
 
     # Database configuration
-    instance_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'instance')
-    os.makedirs(instance_path, exist_ok=True)
-    db_path = os.path.join(instance_path, 'portals.db')
-    app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    database_url = os.environ.get("DATABASE_URL")
+    if not database_url:
+        raise RuntimeError("DATABASE_URL is not set")
+
+    app.config["SQLALCHEMY_DATABASE_URI"] = database_url
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
     # Initialize database
     from app.models import db
