@@ -161,6 +161,10 @@ def register_routes(app):
         ))
         return add_no_cache_headers(response)
 
+    @app.route("/debug/routes")
+    def debug_routes():
+        return "<br>".join(sorted(str(r) for r in app.url_map.iter_rules()))
+
     @app.route('/accounts')
     def accounts():
         """Display all copier accounts with balance and equity."""
