@@ -606,12 +606,12 @@ body.admin-page {
 }
 
 /* PnL Color Indicators */
-.positive-pnl {
+.trades-table td.positive-pnl {
     color: #2e7d32;
     font-weight: 600;
 }
 
-.negative-pnl {
+.trades-table td.negative-pnl {
     color: #c62828;
     font-weight: 600;
 }
