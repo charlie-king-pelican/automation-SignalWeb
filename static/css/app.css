@@ -616,6 +616,11 @@ body.admin-page {
     font-weight: 600;
 }
 
+.trades-table td.zero-pnl {
+    color: #9aa0a6;
+    font-weight: 500;
+}
+
 /* Empty State */
 .empty-state {
     text-align: center;

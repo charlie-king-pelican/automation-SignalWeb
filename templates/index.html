@@ -259,7 +259,15 @@
                                             -
                                         {% endif %}
                                     </td>
-                                    <td class="{{ 'positive-pnl' if signal.get('UnrealisedProfit', 0) >= 0 else 'negative-pnl' }}">
+                                    <td class="
+                                        {% if signal.get('UnrealisedProfit', 0) > 0 %}
+                                            positive-pnl
+                                        {% elif signal.get('UnrealisedProfit', 0) < 0 %}
+                                            negative-pnl
+                                        {% else %}
+                                            zero-pnl
+                                        {% endif %}
+                                    ">
                                         {{ '%+.2f'|format(signal.get('UnrealisedProfit', 0)) }}
                                     </td>
                                 </tr>
@@ -312,7 +320,15 @@
                                             -
                                         {% endif %}
                                     </td>
-                                    <td class="{{ 'positive-pnl' if signal.get('RealisedProfit', 0) >= 0 else 'negative-pnl' }}">
+                                    <td class="
+                                        {% if signal.get('RealisedProfit', 0) > 0 %}
+                                            positive-pnl
+                                        {% elif signal.get('RealisedProfit', 0) < 0 %}
+                                            negative-pnl
+                                        {% else %}
+                                            zero-pnl
+                                        {% endif %}
+                                    ">
                                         {{ '%+.2f'|format(signal.get('RealisedProfit', 0)) }}
                                     </td>
                                 </tr>
