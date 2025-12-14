@@ -539,7 +539,7 @@ def register_routes(app):
 
         # Track successful copies from portals
         if api_success and source == 'portal' and portal_slug:
-            from app.models import Portal, PortalEvent, db
+            from app.models import Portal, db
 
             portal = Portal.query.filter_by(slug=portal_slug).first()
             if portal:
@@ -547,19 +547,20 @@ def register_routes(app):
                 portal.successful_copies += 1
                 portal.last_copied_at = datetime.utcnow()
 
-                # Record copy_success event
-                profile_id = services.get_profile_id(token)
-                if profile_id:
-                    now_utc = datetime.utcnow()
-                    copy_event = PortalEvent(
-                        portal_id=portal.id,
-                        event_type='copy_success',
-                        profile_id=profile_id,
-                        copier_id=copier_id,
-                        occurred_at=now_utc,
-                        event_day=now_utc.date()
-                    )
-                    db.session.add(copy_event)
+                # PortalEvent tracking disabled to fix IntegrityError - re-enable later
+                # from app.models import PortalEvent
+                # profile_id = services.get_profile_id(token)
+                # if profile_id:
+                #     now_utc = datetime.utcnow()
+                #     copy_event = PortalEvent(
+                #         portal_id=portal.id,
+                #         event_type='copy_success',
+                #         profile_id=profile_id,
+                #         copier_id=copier_id,
+                #         occurred_at=now_utc,
+                #         event_day=now_utc.date()
+                #     )
+                #     db.session.add(copy_event)
 
                 db.session.commit()
 
@@ -900,8 +901,7 @@ def register_routes(app):
         Provides same features as main dashboard: copy, link/unlink accounts, signals.
         Uses session['access_token'] same as all other authenticated routes.
         """
-        from app.models import Portal, PortalEvent, db
-        from sqlalchemy.exc import IntegrityError
+        from app.models import Portal, db
 
         # Fetch active portal
         portal = Portal.query.filter_by(slug=slug, is_active=True).first()
@@ -916,31 +916,32 @@ def register_routes(app):
             return redirect(url_for('login'))  # Initiate OAuth flow
         session['active_portal_slug'] = slug
 
-        # Track portal view with deduplication
+        # Track portal view - PortalEvent disabled to fix IntegrityError, re-enable later
         profile_id = services.get_profile_id(token)
         if profile_id:
-            from datetime import datetime, date
+            from datetime import datetime
             now_utc = datetime.utcnow()
-            today_utc = now_utc.date()
 
-            # Try to create a deduped view event (one per profile per day)
-            view_event = PortalEvent(
-                portal_id=portal.id,
-                event_type='view',
-                profile_id=profile_id,
-                occurred_at=now_utc,
-                event_day=today_utc
-            )
-            try:
-                db.session.add(view_event)
-                db.session.flush()  # Flush to catch unique constraint violation
-                # Only increment total_views on first view today
-                portal.total_views += 1
-            except IntegrityError:
-                # Duplicate view today - don't increment counter
-                db.session.rollback()
+            # PortalEvent tracking disabled - just update Portal counters
+            # from app.models import PortalEvent
+            # from sqlalchemy.exc import IntegrityError
+            # today_utc = now_utc.date()
+            # view_event = PortalEvent(
+            #     portal_id=portal.id,
+            #     event_type='view',
+            #     profile_id=profile_id,
+            #     occurred_at=now_utc,
+            #     event_day=today_utc
+            # )
+            # try:
+            #     db.session.add(view_event)
+            #     db.session.flush()
+            #     portal.total_views += 1
+            # except IntegrityError:
+            #     db.session.rollback()
 
-            # Always update last_viewed_at
+            # Update Portal counters directly (without event deduplication for now)
+            portal.total_views += 1
             portal.last_viewed_at = now_utc
             db.session.commit()
 
