@@ -351,11 +351,13 @@
     </div> <!-- End card -->
 
     <!-- Copy Settings Modal -->
+    {% set modal_param = request.args.get('modal') %}
+    {% set modal_mode = modal_param if modal_param in ['copy', 'edit'] else ('edit' if is_copying else 'copy') %}
     <div id="copyModal" class="modal" style="display: none;">
         <div class="modal-overlay" onclick="closeCopyModal()"></div>
         <div class="modal-content">
             <div class="modal-header">
-                <h2>{% if is_copying %}Edit Copy Settings{% else %}Copy Strategy{% endif %}</h2>
+                <h2>{% if modal_mode == 'edit' %}Edit Copy Settings{% else %}Copy Strategy{% endif %}</h2>
                 <button class="modal-close" type="button" onclick="closeCopyModal()">&times;</button>
             </div>
             <form method="POST" action="/copy-strategy">
@@ -363,18 +365,17 @@
                 <input type="hidden" name="strategy_id" value="{{ strategy_id }}">
                 <input type="hidden" name="strategy_name" value="{{ strategy.name }}">
                 <input type="hidden" name="source" value="dashboard">
-                <input type="hidden" name="modal_type" value="{% if is_copying %}edit{% else %}copy{% endif %}">
+                <input type="hidden" name="modal_type" value="{{ modal_mode }}">
 
                 <div class="modal-body">
-                    <!-- Copy Status Alert - gated by modal param -->
-                    {% set modal_param = request.args.get('modal') %}
-                    {% if request.args.get('copy_success') and (modal_param == 'copy' or modal_param == 'edit') %}
+                    <!-- Copy Status Alert - only when modal_param matches modal_mode -->
+                    {% if request.args.get('copy_success') and modal_param == modal_mode %}
                     <div class="modal-alert modal-alert-success">
                         <span>{{ request.args.get('copy_success') }}</span>
                         <button type="button" class="modal-alert-close" onclick="dismissModalAlert(this)">&times;</button>
                     </div>
                     {% endif %}
-                    {% if request.args.get('copy_error') and (modal_param == 'copy' or modal_param == 'edit') %}
+                    {% if request.args.get('copy_error') and modal_param == modal_mode %}
                     <div class="modal-alert modal-alert-error">
                         <span>{{ request.args.get('copy_error') }}</span>
                         <button type="button" class="modal-alert-close" onclick="dismissModalAlert(this)">&times;</button>
@@ -422,7 +423,7 @@
 
                 <div class="modal-footer">
                     <button type="button" class="btn-secondary" onclick="closeCopyModal()">Cancel</button>
-                    <button type="submit" class="btn-primary">{% if is_copying %}Update{% else %}Start Copying{% endif %}</button>
+                    <button type="submit" class="btn-primary">{% if modal_mode == 'edit' %}Update{% else %}Start Copying{% endif %}</button>
                 </div>
             </form>
         </div>
