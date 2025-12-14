@@ -366,14 +366,15 @@
                 <input type="hidden" name="modal_type" value="{% if is_copying %}edit{% else %}copy{% endif %}">
 
                 <div class="modal-body">
-                    <!-- Copy Status Alert -->
-                    {% if request.args.get('copy_success') %}
+                    <!-- Copy Status Alert - gated by modal param -->
+                    {% set modal_param = request.args.get('modal') %}
+                    {% if request.args.get('copy_success') and (modal_param == 'copy' or modal_param == 'edit') %}
                     <div class="modal-alert modal-alert-success">
                         <span>{{ request.args.get('copy_success') }}</span>
                         <button type="button" class="modal-alert-close" onclick="dismissModalAlert(this)">&times;</button>
                     </div>
                     {% endif %}
-                    {% if request.args.get('copy_error') %}
+                    {% if request.args.get('copy_error') and (modal_param == 'copy' or modal_param == 'edit') %}
                     <div class="modal-alert modal-alert-error">
                         <span>{{ request.args.get('copy_error') }}</span>
                         <button type="button" class="modal-alert-close" onclick="dismissModalAlert(this)">&times;</button>
@@ -485,10 +486,11 @@
 
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
     <script>
-        // Auto-open copy modal if there's a success/error message
+        // Auto-open modal based on modal param (copy or edit)
         window.addEventListener('DOMContentLoaded', function() {
             const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.has('copy_success') || urlParams.has('copy_error')) {
+            const modalParam = urlParams.get('modal');
+            if (modalParam === 'copy' || modalParam === 'edit') {
                 openCopyModal();
             }
         });
