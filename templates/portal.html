@@ -392,17 +392,14 @@
                 <input type="hidden" name="modal_type" value="{% if is_copying %}edit{% else %}copy{% endif %}">
 
                 <div class="modal-body">
-                    <!-- Copy Status Alert - Only show if modal param matches -->
-                    {% set expected_modal = 'edit' if is_copying else 'copy' %}
-                    {% set actual_modal = request.args.get('modal', expected_modal) %}
-
-                    {% if request.args.get('copy_success') and actual_modal == expected_modal %}
+                    <!-- Copy Status Alert -->
+                    {% if request.args.get('copy_success') %}
                     <div class="modal-alert modal-alert-success">
                         <span>{{ request.args.get('copy_success') }}</span>
                         <button type="button" class="modal-alert-close" onclick="dismissModalAlert(this)">&times;</button>
                     </div>
                     {% endif %}
-                    {% if request.args.get('copy_error') and actual_modal == expected_modal %}
+                    {% if request.args.get('copy_error') %}
                     <div class="modal-alert modal-alert-error">
                         <span>{{ request.args.get('copy_error') }}</span>
                         <button type="button" class="modal-alert-close" onclick="dismissModalAlert(this)">&times;</button>
