@@ -526,7 +526,7 @@ def register_routes(app):
         # Record API result in debug log
         debug_entry['api_result'] = {
             'success': api_success,
-            'result_summary': str(api_result)[:200] if api_result else None
+            'result_summary': str(api_result)[:200] if api_result is not None else None
         }
 
         # Build final messages

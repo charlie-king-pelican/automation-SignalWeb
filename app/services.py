@@ -979,12 +979,16 @@ def create_copy_settings(copier_id, strategy_id, token, settings):
             headers=headers,
             json=settings
         )
-        if resp.status_code in [200, 201]:
+        
+        if resp.ok:
+            if resp.status_code == 204 or not resp.content:
+                return True, {}
             return True, resp.json()
         return False, resp.text
     except Exception as e:
         return False, str(e)
 
+        
 
 def update_copy_settings(copier_id, strategy_id, token, settings):
     """
@@ -1010,12 +1014,17 @@ def update_copy_settings(copier_id, strategy_id, token, settings):
             headers=headers,
             json=settings
         )
-        if resp.status_code == 200:
+        
+        if resp.ok:
+            if resp.status_code == 204 or not resp.content:
+                return True, {}
             return True, resp.json()
+        
         return False, resp.text
+
     except Exception as e:
         return False, str(e)
-
+       
 
 def get_profile_id(token):
     """
