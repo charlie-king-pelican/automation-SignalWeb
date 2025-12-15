@@ -28,7 +28,9 @@
         <!-- Hero Section: The Anchor -->
         <div class="hero-section">
             <div class="strategy-name">{{ theme.headline }}</div>
-            <div class="inception-date">{{ theme.subheadline }}</div>
+            <div class="inception-date">
+                Trading since <span>{{ inception_display }}</span>
+            </div>
 
             <!-- Account Selector -->
             {% if accounts_list %}
