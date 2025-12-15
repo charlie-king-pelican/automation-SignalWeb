@@ -250,6 +250,11 @@
 
                 {% if theme.visible_sections.get('signals', True) %}
                 <div id="panelOpen" class="trades-panel active">
+                    <div class="sort-controls" data-table="openTradesBody">
+                        <span class="sort-label">Sort:</span>
+                        <button type="button" class="sort-pill active" data-sort="time" data-direction="desc">Time ▼</button>
+                        <button type="button" class="sort-pill" data-sort="pnl">PnL</button>
+                    </div>
                     <table class="trades-table">
                         <thead>
                             <tr>
@@ -264,7 +269,7 @@
                         <tbody id="openTradesBody">
                             {% if open_signals %}
                                 {% for signal in open_signals %}
-                                <tr>
+                                <tr data-open-ts="{{ signal.get('OpenTimestamp', '') }}" data-pnl="{{ signal.get('UnrealisedProfit', 0) }}">
                                     <td>{{ signal.get('Instrument', '-') }}</td>
                                     <td>
                                         <span class="pill {{ 'buy' if signal.get('Direction', '').lower() == 'buy' else 'sell' }}">
@@ -298,6 +303,11 @@
 
                 {% if theme.visible_sections.get('trades', True) %}
                 <div id="panelClosed" class="trades-panel {% if not theme.visible_sections.get('signals', True) %}active{% endif %}">
+                    <div class="sort-controls" data-table="closedTradesBody">
+                        <span class="sort-label">Sort:</span>
+                        <button type="button" class="sort-pill active" data-sort="time" data-direction="desc">Time ▼</button>
+                        <button type="button" class="sort-pill" data-sort="pnl">PnL</button>
+                    </div>
                     <table class="trades-table">
                         <thead>
                             <tr>
@@ -312,7 +322,7 @@
                         <tbody id="closedTradesBody">
                             {% if closed_signals %}
                                 {% for signal in closed_signals %}
-                                <tr>
+                                <tr data-close-ts="{{ signal.get('CloseTimestamp', '') }}" data-pnl="{{ signal.get('RealisedProfit', 0) }}">
                                     <td>{{ signal.get('Instrument', '-') }}</td>
                                     <td>
                                         <span class="pill {{ 'buy' if signal.get('Direction', '').lower() == 'buy' else 'sell' }}">

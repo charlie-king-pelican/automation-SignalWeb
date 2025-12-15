@@ -540,6 +540,45 @@ body.admin-page {
     font-weight: 700;
 }
 
+/* Sort Controls - matches range-pill visual pattern */
+.sort-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.sort-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.sort-pill {
+    padding: 5px 12px;
+    background: white;
+    border: 2px solid #e8ecf1;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #1a1a1a;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.sort-pill:hover {
+    border-color: #2962ff;
+    box-shadow: 0 2px 8px rgba(41,98,255,0.1);
+}
+
+.sort-pill.active {
+    background: #2962ff;
+    color: white;
+    border-color: #2962ff;
+}
+
 .trades-panel {
     display: none;
     background: #fff;

@@ -371,4 +371,105 @@ window.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
         cleanUrlParams(['link_success', 'link_error', 'unlink_success', 'unlink_error', 'copy_success', 'copy_error', 'stop_success', 'stop_error']);
     }, 100);
+
+    // Initialize sort controls
+    initSortControls();
 });
+
+/**
+ * Sort a trades table by the specified key and direction
+ * @param {string} tbodyId - The ID of the tbody element to sort
+ * @param {string} sortKey - 'time' or 'pnl'
+ * @param {string} direction - 'asc' or 'desc'
+ */
+function sortTradesTable(tbodyId, sortKey, direction) {
+    const tbody = document.getElementById(tbodyId);
+    if (!tbody) return;
+
+    const rows = Array.from(tbody.querySelectorAll('tr[data-pnl]'));
+    if (rows.length === 0) return;
+
+    // Determine which timestamp attribute to use
+    const isClosedTable = tbodyId === 'closedTradesBody';
+    const timeAttr = isClosedTable ? 'data-close-ts' : 'data-open-ts';
+
+    rows.sort((a, b) => {
+        let valA, valB;
+
+        if (sortKey === 'time') {
+            // Parse ISO timestamps for accurate comparison
+            valA = a.getAttribute(timeAttr) || '';
+            valB = b.getAttribute(timeAttr) || '';
+            // ISO strings sort correctly as strings
+            if (valA < valB) return direction === 'asc' ? -1 : 1;
+            if (valA > valB) return direction === 'asc' ? 1 : -1;
+            return 0;
+        } else if (sortKey === 'pnl') {
+            // Parse as floats for numeric comparison
+            valA = parseFloat(a.getAttribute('data-pnl')) || 0;
+            valB = parseFloat(b.getAttribute('data-pnl')) || 0;
+            return direction === 'asc' ? valA - valB : valB - valA;
+        }
+
+        return 0;
+    });
+
+    // Re-append rows in sorted order
+    rows.forEach(row => tbody.appendChild(row));
+}
+
+/**
+ * Handle sort pill click
+ * @param {Event} event - The click event
+ */
+function handleSortClick(event) {
+    const pill = event.target.closest('.sort-pill');
+    if (!pill) return;
+
+    const controlsDiv = pill.closest('.sort-controls');
+    const tbodyId = controlsDiv.getAttribute('data-table');
+    const sortKey = pill.getAttribute('data-sort');
+    const currentDirection = pill.getAttribute('data-direction');
+    const isActive = pill.classList.contains('active');
+
+    let newDirection;
+    if (isActive) {
+        // Toggle direction if clicking the already-active pill
+        newDirection = currentDirection === 'desc' ? 'asc' : 'desc';
+    } else {
+        // Set default direction for the sort type
+        newDirection = sortKey === 'time' ? 'desc' : 'desc'; // Newest first / Highest first
+    }
+
+    // Update all pills in this control group
+    const allPills = controlsDiv.querySelectorAll('.sort-pill');
+    allPills.forEach(p => {
+        p.classList.remove('active');
+        p.removeAttribute('data-direction');
+        // Reset label to base text
+        const baseName = p.getAttribute('data-sort') === 'time' ? 'Time' : 'PnL';
+        p.textContent = baseName;
+    });
+
+    // Set active state on clicked pill
+    pill.classList.add('active');
+    pill.setAttribute('data-direction', newDirection);
+
+    // Update label with direction arrow
+    const baseName = sortKey === 'time' ? 'Time' : 'PnL';
+    const arrow = newDirection === 'desc' ? '▼' : '▲';
+    pill.textContent = baseName + ' ' + arrow;
+
+    // Perform the sort
+    sortTradesTable(tbodyId, sortKey, newDirection);
+}
+
+/**
+ * Initialize sort controls on the page
+ */
+function initSortControls() {
+    // Attach click handlers to all sort pills
+    document.querySelectorAll('.sort-controls').forEach(controlsDiv => {
+        controlsDiv.addEventListener('click', handleSortClick);
+    });
+}
