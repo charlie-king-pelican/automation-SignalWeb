@@ -427,11 +427,18 @@ body.admin-page {
     color: white;
 }
 
+/* Trades Header Row - tabs left, sort controls right */
+.trades-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 10px 0 18px;
+}
+
 /* Trades Tabs + Table */
 .trades-tabs {
     display: flex;
     gap: 10px;
-    margin: 10px 0 18px;
 }
 
 .tab-btn {
@@ -545,7 +552,6 @@ body.admin-page {
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-bottom: 12px;
 }
 
 .sort-label {

@@ -186,14 +186,54 @@
             {% if theme.visible_sections.get('signals', True) or theme.visible_sections.get('trades', True) %}
             <div id="tradesSection" class="page-section {% if not theme.visible_sections.get('overview', True) %}active{% endif %}">
                 <div class="section-title" style="margin-top: 10px;">TRADES</div>
-                <div class="trades-tabs">
+                <div class="trades-header-row">
+                    <div class="trades-tabs">
+                        {% if theme.visible_sections.get('signals', True) %}
+                        <button id="tabOpen" class="tab-btn active" type="button" onclick="showTradesTab('open')">Open</button>
+                        {% endif %}
+                        {% if theme.visible_sections.get('trades', True) %}
+                        <button id="tabClosed" class="tab-btn {% if not theme.visible_sections.get('signals', True) %}active{% endif %}" type="button" onclick="showTradesTab('closed')">Closed</button>
+                        {% endif %}
+                    </div>
                     {% if theme.visible_sections.get('signals', True) %}
-                    <button id="tabOpen" class="tab-btn active" type="button" onclick="showTradesTab('open')">Open</button>
+                    <div id="openSortControls" class="sort-controls" data-table="openTradesBody">
+                        <span class="sort-label">Sort:</span>
+                        <button type="button" class="sort-pill active" data-sort="time" data-direction="desc">Time ▼</button>
+                        <button type="button" class="sort-pill" data-sort="pnl">PnL</button>
+                    </div>
                     {% endif %}
                     {% if theme.visible_sections.get('trades', True) %}
-                    <button id="tabClosed" class="tab-btn {% if not theme.visible_sections.get('signals', True) %}active{% endif %}" type="button" onclick="showTradesTab('closed')">Closed</button>
+                    <div id="closedSortControls" class="sort-controls" data-table="closedTradesBody" style="{% if theme.visible_sections.get('signals', True) %}display: none;{% endif %}">
+                        <span class="sort-label">Sort:</span>
+                        <button type="button" class="sort-pill active" data-sort="time" data-direction="desc">Time ▼</button>
+                        <button type="button" class="sort-pill" data-sort="pnl">PnL</button>
+                    </div>
                     {% endif %}
                 </div>
+
+                <!-- Open Trades Summary Stats -->
+                {% if theme.visible_sections.get('signals', True) %}
+                <div id="openStatsRow" class="closed-stats-row">
+                    <div class="closed-stat-card">
+                        <div class="closed-stat-value" id="openTradesCount">{{ open_signals|length if open_signals else 0 }}</div>
+                        <div class="closed-stat-label">Trades</div>
+                    </div>
+                    <div class="closed-stat-card">
+                        <div class="closed-stat-value" id="openTotalPnl">
+                            {% set total_unrealised = namespace(val=0) %}
+                            {% if open_signals %}
+                                {% for signal in open_signals %}
+                                    {% set total_unrealised.val = total_unrealised.val + signal.get('UnrealisedProfit', 0) %}
+                                {% endfor %}
+                            {% endif %}
+                            <span class="{{ 'positive-pnl' if total_unrealised.val >= 0 else 'negative-pnl' }}">
+                                {{ format_currency(total_unrealised.val, strategy.currency_code) }}
+                            </span>
+                        </div>
+                        <div class="closed-stat-label">Total P&L</div>
+                    </div>
+                </div>
+                {% endif %}
 
                 <!-- Closed Trades Date Range Selector -->
                 <div id="closedRangeSelector" class="range-selector" style="display: none;">
@@ -250,11 +290,6 @@
 
                 {% if theme.visible_sections.get('signals', True) %}
                 <div id="panelOpen" class="trades-panel active">
-                    <div class="sort-controls" data-table="openTradesBody">
-                        <span class="sort-label">Sort:</span>
-                        <button type="button" class="sort-pill active" data-sort="time" data-direction="desc">Time ▼</button>
-                        <button type="button" class="sort-pill" data-sort="pnl">PnL</button>
-                    </div>
                     <table class="trades-table">
                         <thead>
                             <tr>
@@ -303,11 +338,6 @@
 
                 {% if theme.visible_sections.get('trades', True) %}
                 <div id="panelClosed" class="trades-panel {% if not theme.visible_sections.get('signals', True) %}active{% endif %}">
-                    <div class="sort-controls" data-table="closedTradesBody">
-                        <span class="sort-label">Sort:</span>
-                        <button type="button" class="sort-pill active" data-sort="time" data-direction="desc">Time ▼</button>
-                        <button type="button" class="sort-pill" data-sort="pnl">PnL</button>
-                    </div>
                     <table class="trades-table">
                         <thead>
                             <tr>

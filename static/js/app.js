@@ -57,24 +57,35 @@ function showTradesTab(which) {
     const panelOpen = document.getElementById('panelOpen');
     const panelClosed = document.getElementById('panelClosed');
     const rangeSelector = document.getElementById('closedRangeSelector');
-    const statsRow = document.getElementById('closedStatsRow');
+    const closedStatsRow = document.getElementById('closedStatsRow');
+    const openStatsRow = document.getElementById('openStatsRow');
+    const openSortControls = document.getElementById('openSortControls');
+    const closedSortControls = document.getElementById('closedSortControls');
 
     if (which === 'closed') {
         tabClosed?.classList.add('active');
         tabOpen?.classList.remove('active');
         panelClosed?.classList.add('active');
         panelOpen?.classList.remove('active');
-        // Show range selector and stats for closed trades
+        // Show closed range selector, stats, and sort controls
         if (rangeSelector) rangeSelector.style.display = 'flex';
-        if (statsRow) statsRow.style.display = 'flex';
+        if (closedStatsRow) closedStatsRow.style.display = 'flex';
+        if (closedSortControls) closedSortControls.style.display = 'flex';
+        // Hide open stats and sort controls
+        if (openStatsRow) openStatsRow.style.display = 'none';
+        if (openSortControls) openSortControls.style.display = 'none';
     } else {
         tabOpen?.classList.add('active');
         tabClosed?.classList.remove('active');
         panelOpen?.classList.add('active');
         panelClosed?.classList.remove('active');
-        // Hide range selector and stats for open trades
+        // Hide closed range selector, stats, and sort controls
         if (rangeSelector) rangeSelector.style.display = 'none';
-        if (statsRow) statsRow.style.display = 'none';
+        if (closedStatsRow) closedStatsRow.style.display = 'none';
+        if (closedSortControls) closedSortControls.style.display = 'none';
+        // Show open stats and sort controls
+        if (openStatsRow) openStatsRow.style.display = 'flex';
+        if (openSortControls) openSortControls.style.display = 'flex';
     }
 }
 
