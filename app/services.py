@@ -22,7 +22,7 @@ TENANT_ID = 'pepperstone'
 WHITE_LABEL_ID = 'pepperstone'
 
 # Request timeout in seconds - fail fast rather than hang
-REQUEST_TIMEOUT = 5
+REQUEST_TIMEOUT = (10, 60)
 
 # Short timeout for summary/count calls (parallel fetches)
 SUMMARY_REQUEST_TIMEOUT = 2
