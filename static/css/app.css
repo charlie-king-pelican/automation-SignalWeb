@@ -606,6 +606,22 @@ body.admin-page {
 }
 
 /* PnL Color Indicators */
+/* Global PnL helpers (used outside trades tables) */
+.positive-pnl {
+    color: #2e7d32;
+    font-weight: 600;
+}
+
+.negative-pnl {
+    color: #c62828;
+    font-weight: 600;
+}
+
+.zero-pnl {
+    color: #9aa0a6;
+    font-weight: 500;
+}
+
 .trades-table td.positive-pnl {
     color: #2e7d32;
     font-weight: 600;
