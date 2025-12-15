@@ -960,8 +960,10 @@ def register_routes(app):
 
         # Parse theme configuration
         theme = json.loads(portal.theme_json) if portal.theme_json else {}
-        theme.setdefault('headline', strategy_data.get('name', 'Trading Strategy'))
-        theme.setdefault('subheadline', f"Trading since {strategy_data.get('inception_date', 'N/A')}")
+        if not theme.get('headline'):
+            theme['headline'] = strategy_data.get('name', 'Trading Strategy')
+        if not theme.get('subheadline'):
+            theme['subheadline'] = f"Trading since {strategy_data.get('inception_date', 'N/A')}"
         theme.setdefault('cta_text', 'Start Copying')
         theme.setdefault('cta_url', '#')
         theme.setdefault('visible_sections', {'overview': True, 'signals': True, 'trades': True})
