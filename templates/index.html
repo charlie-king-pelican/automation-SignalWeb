@@ -251,11 +251,16 @@
                         <div class="closed-stat-label">Most Traded</div>
                     </div>
                     <div class="closed-stat-card">
-                        <div class="closed-stat-value positive-pnl">{{ format_currency(closed_trades_stats.biggest_win, strategy.currency_code) }}</div>
+                        <div class="closed-stat-value {{ 'positive-pnl' if closed_trades_stats.biggest_win > 0 else 'negative-pnl' if closed_trades_stats.biggest_win < 0 else 'zero-pnl' }}">
+                          {{ format_currency(closed_trades_stats.biggest_win, strategy.currency_code) }}
+                        </div>
                         <div class="closed-stat-label">Best</div>
-                    </div>
-                    <div class="closed-stat-card">
-                        <div class="closed-stat-value negative-pnl">{{ format_currency(closed_trades_stats.biggest_loss, strategy.currency_code) }}</div>
+                      </div>
+                      
+                      <div class="closed-stat-card">
+                        <div class="closed-stat-value {{ 'positive-pnl' if closed_trades_stats.biggest_loss > 0 else 'negative-pnl' if closed_trades_stats.biggest_loss < 0 else 'zero-pnl' }}">
+                          {{ format_currency(closed_trades_stats.biggest_loss, strategy.currency_code) }}
+                        </div>
                         <div class="closed-stat-label">Worst</div>
                     </div>
                 </div>
