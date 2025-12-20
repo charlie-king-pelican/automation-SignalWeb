@@ -17,6 +17,7 @@
         <a href="/accounts" class="nav-link">Accounts</a>
         <a href="/copying" class="nav-link active">Copying</a>
         <a href="/copier-trades" class="nav-link">Copier Trades</a>
+        <a href="#" class="nav-link nav-link-help" onclick="toggleHelpDrawer(); return false;">Help</a>
         <a href="/logout" class="nav-link nav-link-logout">Logout</a>
     </div>
 
@@ -239,5 +240,7 @@
     </div>
 
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+
+    {% include '_help_drawer.html' %}
 </body>
 </html>

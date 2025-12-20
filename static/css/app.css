@@ -1819,3 +1819,130 @@ body.debug-page {
 .modal-alert-error .modal-alert-close {
     color: #721c24;
 }
+
+/* ==========================================
+   Help Drawer - Global slide-out panel
+   ========================================== */
+.help-drawer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10000;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.help-drawer.open {
+    visibility: visible;
+    pointer-events: auto;
+}
+
+.help-drawer-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.help-drawer.open .help-drawer-overlay {
+    opacity: 1;
+}
+
+.help-drawer-panel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 360px;
+    max-width: 90vw;
+    background: white;
+    box-shadow: -8px 0 30px rgba(0, 0, 0, 0.15);
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.help-drawer.open .help-drawer-panel {
+    transform: translateX(0);
+}
+
+.help-drawer-header {
+    padding: 24px 28px;
+    border-bottom: 1px solid #e8ecf1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+}
+
+.help-drawer-header h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: #1a1a1a;
+}
+
+.help-drawer-close {
+    background: none;
+    border: none;
+    font-size: 28px;
+    color: #6c757d;
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.help-drawer-close:hover {
+    background: #f7f9fb;
+    color: #1a1a1a;
+}
+
+.help-drawer-body {
+    padding: 28px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.help-step {
+    padding: 16px 20px;
+    margin-bottom: 12px;
+    background: #f7f9fb;
+    border: 1px solid #e8ecf1;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #1a1a1a;
+}
+
+.help-step:last-child {
+    margin-bottom: 0;
+}
+
+/* Help nav link - positioned before Logout */
+.nav-link-help {
+    margin-left: auto;
+    color: #2962ff;
+}
+
+.nav-link-help:hover {
+    background: #f0f4ff;
+    color: #1e4ed8;
+}
+
+/* Adjust Logout to not use margin-left auto when Help is present */
+.nav-link-help + .nav-link-logout {
+    margin-left: 0;
+}

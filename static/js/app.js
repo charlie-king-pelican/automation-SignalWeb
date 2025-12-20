@@ -484,3 +484,53 @@ function initSortControls() {
         controlsDiv.addEventListener('click', handleSortClick);
     });
 }
+
+// ==========================================
+// Help Drawer - Global slide-out panel
+// ==========================================
+
+/**
+ * Open the help drawer
+ */
+function openHelpDrawer() {
+    const drawer = document.getElementById('helpDrawer');
+    if (drawer) {
+        drawer.classList.add('open');
+        drawer.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+/**
+ * Close the help drawer
+ */
+function closeHelpDrawer() {
+    const drawer = document.getElementById('helpDrawer');
+    if (drawer) {
+        drawer.classList.remove('open');
+        drawer.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+    }
+}
+
+/**
+ * Toggle the help drawer open/closed
+ */
+function toggleHelpDrawer() {
+    const drawer = document.getElementById('helpDrawer');
+    if (drawer && drawer.classList.contains('open')) {
+        closeHelpDrawer();
+    } else {
+        openHelpDrawer();
+    }
+}
+
+// Close help drawer on ESC key press
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        const drawer = document.getElementById('helpDrawer');
+        if (drawer && drawer.classList.contains('open')) {
+            closeHelpDrawer();
+        }
+    }
+});
