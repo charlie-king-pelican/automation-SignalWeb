@@ -569,7 +569,7 @@ def build_auth_url(redirect_uri, challenge):
         f"&scope=openid%20profile%20email%20api%20copytrade%20offline_access"
         f"&code_challenge={challenge}"
         f"&code_challenge_method=S256"
-        f"&acr_values=tenant:{TENANT_ID}%20sign:up:true"
+        f"&acr_values=tenant:{TENANT_ID}%20sign_up:true"
         f"&screen_hint=sign_up"
     )
     return auth_url
