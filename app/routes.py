@@ -175,11 +175,16 @@ def register_routes(app):
 
     @app.route("/debug/routes")
     def debug_routes():
+        if not session.get('admin_authenticated'):
+            return "Not Found", 404
         return "<br>".join(sorted(str(r) for r in app.url_map.iter_rules()))
 
     @app.route('/debug/copy-logs')
     def debug_copy_logs():
         """Display in-memory debug logs for copy attempts."""
+        if not session.get('admin_authenticated'):
+            return "Not Found", 404
+
         from flask import jsonify
 
         # Option to return JSON
@@ -402,6 +407,9 @@ def register_routes(app):
     @app.route('/debug/api')
     def debug_api():
         """Debug route - display raw JSON for strategy open and closed signals."""
+        if not session.get('admin_authenticated'):
+            return "Not Found", 404
+
         token = session.get('access_token')
         if not token:
             return redirect(url_for('index'))
