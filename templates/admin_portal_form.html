@@ -185,13 +185,14 @@
                 </div>
             </div>
 
+            {% set theme = (portal.theme_json|from_json) if portal else {} %}
             <div class="form-section">
                 <h2>Branding & Customization</h2>
 
                 <div class="form-group">
                     <label for="headline">Headline</label>
                     <input type="text" id="headline" name="headline"
-                           value="{% if portal %}{{ portal.theme_json|from_json|attr('headline') }}{% endif %}"
+                           value="{{ theme.get('headline', '') }}"
                            placeholder="e.g., Elite Trading Strategy">
                     <div class="help-text">Main title shown on the portal (leave empty to use strategy name)</div>
                 </div>
@@ -199,7 +200,7 @@
                 <div class="form-group">
                     <label for="subheadline">Subheadline</label>
                     <input type="text" id="subheadline" name="subheadline"
-                           value="{% if portal %}{{ portal.theme_json|from_json|attr('subheadline') }}{% endif %}"
+                           value="{{ theme.get('subheadline', '') }}"
                            placeholder="e.g., Consistent returns since 2020">
                     <div class="help-text">Subtitle shown below headline (leave empty to use inception date)</div>
                 </div>
@@ -207,7 +208,7 @@
                 <div class="form-group">
                     <label for="cta_text">Call-to-Action Text</label>
                     <input type="text" id="cta_text" name="cta_text"
-                           value="{% if portal %}{{ portal.theme_json|from_json|attr('cta_text') }}{% endif %}"
+                           value="{{ theme.get('cta_text', '') }}"
                            placeholder="e.g., Start Copying Today">
                     <div class="help-text">Text for the action button (leave empty for default)</div>
                 </div>
@@ -215,7 +216,7 @@
                 <div class="form-group">
                     <label for="cta_url">Call-to-Action URL</label>
                     <input type="url" id="cta_url" name="cta_url"
-                           value="{% if portal %}{{ portal.theme_json|from_json|attr('cta_url') }}{% endif %}"
+                           value="{{ theme.get('cta_url', '') }}"
                            placeholder="https://example.com/signup">
                     <div class="help-text">Where the CTA button should link to</div>
                 </div>
@@ -226,21 +227,21 @@
 
                 <div class="form-group">
                     <label>Choose which sections to display on the portal:</label>
-                    {% set visible = portal.theme_json|from_json|attr('visible_sections') if portal else {} %}
+                    {% set visible = theme.get('visible_sections', {'overview': True, 'signals': True, 'trades': True}) %}
                     <div class="checkbox-group">
                         <label>
                             <input type="checkbox" name="visible_overview"
-                                   {% if not portal or visible.get('overview', True) %}checked{% endif %}>
+                                   {% if visible.get('overview', True) %}checked{% endif %}>
                             <strong>Overview</strong> - Performance metrics, trade statistics, account status
                         </label>
                         <label>
                             <input type="checkbox" name="visible_signals"
-                                   {% if not portal or visible.get('signals', True) %}checked{% endif %}>
+                                   {% if visible.get('signals', True) %}checked{% endif %}>
                             <strong>Open Signals</strong> - Current open positions
                         </label>
                         <label>
                             <input type="checkbox" name="visible_trades"
-                                   {% if not portal or visible.get('trades', True) %}checked{% endif %}>
+                                   {% if visible.get('trades', True) %}checked{% endif %}>
                             <strong>Closed Trades</strong> - Trade history and statistics
                         </label>
                     </div>
@@ -268,7 +269,7 @@
                 <div class="form-group">
                     <label for="banned_countries">Banned Countries</label>
                     <input type="text" id="banned_countries" name="banned_countries"
-                           value="{% if portal %}{{ (portal.theme_json|from_json|attr('banned_countries') or [])|join(', ') }}{% endif %}"
+                           value="{{ (theme.get('banned_countries') or [])|join(', ') }}"
                            placeholder="e.g., GB, US, AU">
                     <div class="help-text">Comma-separated ISO country codes. Users from these countries will be blocked from accessing this portal.</div>
                 </div>
