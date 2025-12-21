@@ -399,18 +399,27 @@ def register_routes(app):
         verifier, challenge = services.generate_pkce()
         session['verifier'] = verifier
 
-        # Determine tenant_id and white_label_id from active portal or use defaults
+        # Determine tenant_id and white_label_id based on context
         tenant_id = None
         white_label_id = None
+        is_portal_context = False
 
         portal_slug = session.get('active_portal_slug')
         if portal_slug:
+            is_portal_context = True
             from app.models import Portal
             portal = Portal.query.filter_by(slug=portal_slug, is_active=True).first()
             if portal and portal.theme_json:
                 theme = json.loads(portal.theme_json)
-                tenant_id = theme.get('tenant_id') or None
-                white_label_id = theme.get('white_label_id') or None
+                tenant_id = (theme.get('tenant_id') or '').strip() or None
+                white_label_id = (theme.get('white_label_id') or '').strip() or None
+
+            # Portal context MUST have tenant_id and white_label_id configured
+            if not tenant_id or not white_label_id:
+                app.logger.warning(f"Portal login failed: slug={portal_slug}, tenant_id={tenant_id}, white_label_id={white_label_id}")
+                return "Portal login is not configured. Please contact support.", 400
+
+            app.logger.info(f"Portal login: slug={portal_slug}, tenant_id={tenant_id}")
 
         redirect_uri = app.config['BASE_URL']
         auth_url = services.build_auth_url(redirect_uri, challenge, tenant_id, white_label_id)
@@ -940,13 +949,15 @@ def register_routes(app):
         if not portal:
             return render_template('404.html'), 404
 
+        # Set portal context in session BEFORE any redirect
+        session['active_portal_slug'] = slug
+
         # Check authentication - redirect to login if not authenticated
         token = session.get('access_token')
         if not token:
             # Save the requested URL to redirect back after login
             session['next_url'] = request.url
             return redirect(url_for('login'))  # Initiate OAuth flow
-        session['active_portal_slug'] = slug
 
         # Track portal view - PortalEvent disabled to fix IntegrityError, re-enable later
         profile_id = services.get_profile_id(token)
