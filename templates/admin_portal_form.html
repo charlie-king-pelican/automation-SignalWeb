@@ -251,6 +251,26 @@
                 </div>
             </div>
 
+            <div class="form-section">
+                <h2>Authentication Settings</h2>
+
+                <div class="form-group">
+                    <label for="tenant_id">Tenant ID</label>
+                    <input type="text" id="tenant_id" name="tenant_id"
+                           value="{{ theme.get('tenant_id', '') }}"
+                           placeholder="e.g., pepperstone">
+                    <div class="help-text">Override the default tenant ID for OAuth login. Leave blank to use the system default.</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="white_label_id">White Label ID</label>
+                    <input type="text" id="white_label_id" name="white_label_id"
+                           value="{{ theme.get('white_label_id', '') }}"
+                           placeholder="e.g., pepperstone">
+                    <div class="help-text">Override the default white label ID for OAuth login. Leave blank to use the system default.</div>
+                </div>
+            </div>
+
             <div class="form-actions">
                 <button type="submit" class="btn-submit">
                     {% if portal %}Update Portal{% else %}Create Portal{% endif %}

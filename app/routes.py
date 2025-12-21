@@ -399,8 +399,21 @@ def register_routes(app):
         verifier, challenge = services.generate_pkce()
         session['verifier'] = verifier
 
+        # Determine tenant_id and white_label_id from active portal or use defaults
+        tenant_id = None
+        white_label_id = None
+
+        portal_slug = session.get('active_portal_slug')
+        if portal_slug:
+            from app.models import Portal
+            portal = Portal.query.filter_by(slug=portal_slug, is_active=True).first()
+            if portal and portal.theme_json:
+                theme = json.loads(portal.theme_json)
+                tenant_id = theme.get('tenant_id') or None
+                white_label_id = theme.get('white_label_id') or None
+
         redirect_uri = app.config['BASE_URL']
-        auth_url = services.build_auth_url(redirect_uri, challenge)
+        auth_url = services.build_auth_url(redirect_uri, challenge, tenant_id, white_label_id)
 
         return redirect(auth_url)
 
@@ -1122,13 +1135,19 @@ def register_routes(app):
             banned_countries_raw = request.form.get('banned_countries', '')
             banned_countries = [c.strip().upper() for c in banned_countries_raw.split(',') if c.strip()]
 
+            # Read and normalize tenant_id and white_label_id
+            tenant_id = (request.form.get('tenant_id', '') or '').strip()
+            white_label_id = (request.form.get('white_label_id', '') or '').strip()
+
             theme = {
                 'headline': request.form.get('headline', ''),
                 'subheadline': request.form.get('subheadline', ''),
                 'cta_text': request.form.get('cta_text', ''),
                 'create_account_url': request.form.get('create_account_url', ''),
                 'visible_sections': visible_sections,
-                'banned_countries': banned_countries
+                'banned_countries': banned_countries,
+                'tenant_id': tenant_id,
+                'white_label_id': white_label_id
             }
 
             portal = Portal(
@@ -1173,13 +1192,19 @@ def register_routes(app):
             banned_countries_raw = request.form.get('banned_countries', '')
             banned_countries = [c.strip().upper() for c in banned_countries_raw.split(',') if c.strip()]
 
+            # Read and normalize tenant_id and white_label_id
+            tenant_id = (request.form.get('tenant_id', '') or '').strip()
+            white_label_id = (request.form.get('white_label_id', '') or '').strip()
+
             theme = {
                 'headline': request.form.get('headline', ''),
                 'subheadline': request.form.get('subheadline', ''),
                 'cta_text': request.form.get('cta_text', ''),
                 'create_account_url': request.form.get('create_account_url', ''),
                 'visible_sections': visible_sections,
-                'banned_countries': banned_countries
+                'banned_countries': banned_countries,
+                'tenant_id': tenant_id,
+                'white_label_id': white_label_id
             }
 
             portal.name = request.form.get('name')

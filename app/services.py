@@ -551,17 +551,22 @@ def compute_closed_trades_stats(closed_signals):
     }
 
 
-def build_auth_url(redirect_uri, challenge):
+def build_auth_url(redirect_uri, challenge, tenant_id=None, white_label_id=None):
     """
     Build OAuth authorization URL with PKCE challenge.
 
     Args:
         redirect_uri: Callback URI for OAuth flow
         challenge: PKCE challenge string
+        tenant_id: Optional tenant ID override (uses global TENANT_ID if not provided)
+        white_label_id: Optional white label ID override (unused in URL but kept for consistency)
 
     Returns:
         str: Complete authorization URL
     """
+    # Use provided values or fall back to global defaults
+    effective_tenant_id = tenant_id if tenant_id else TENANT_ID
+
     auth_url = (
         f"{IDENTITY_URL}/connect/authorize"
         f"?client_id={CLIENT_ID}"
@@ -570,7 +575,7 @@ def build_auth_url(redirect_uri, challenge):
         f"&scope=openid%20profile%20email%20api%20copytrade%20offline_access"
         f"&code_challenge={challenge}"
         f"&code_challenge_method=S256"
-        f"&acr_values=tenant:{TENANT_ID}%20sign_up:true"
+        f"&acr_values=tenant:{effective_tenant_id}%20sign_up:true"
         f"&screen_hint=sign_up"
     )
     return auth_url
