@@ -754,6 +754,34 @@ body.admin-page {
     box-shadow: 0 4px 16px rgba(41, 98, 255, 0.4);
 }
 
+/* Create Account Button - Portal context only */
+.create-account-btn {
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    background-color: #2e7d32;
+    color: white;
+    box-shadow: 0 3px 12px rgba(46, 125, 50, 0.3);
+    transition: transform 0.2s, box-shadow 0.2s;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.create-account-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(46, 125, 50, 0.4);
+}
+
+/* Accounts header buttons wrapper */
+.accounts-header-buttons {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
 /* Unlink Button - Small, secondary, top-right placement */
 .unlink-btn {
     border: 1px solid #e0e0e0;

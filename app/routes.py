@@ -363,6 +363,16 @@ def register_routes(app):
         unlink_success = request.args.get('unlink_success')
         unlink_error = request.args.get('unlink_error')
 
+        # Check if in portal context and get create_account_url
+        create_account_url = None
+        portal_slug = session.get('active_portal_slug')
+        if portal_slug:
+            from app.models import Portal
+            portal = Portal.query.filter_by(slug=portal_slug, is_active=True).first()
+            if portal and portal.theme_json:
+                theme = json.loads(portal.theme_json)
+                create_account_url = theme.get('create_account_url') or theme.get('cta_url') or None
+
         response = make_response(render_template(
             'accounts.html',
             profile_name=profile_name,
@@ -373,7 +383,8 @@ def register_routes(app):
             link_error=link_error,
             unlink_success=unlink_success,
             unlink_error=unlink_error,
-            format_currency=services.format_currency
+            format_currency=services.format_currency,
+            create_account_url=create_account_url
         ))
         return add_no_cache_headers(response)
 
@@ -1107,7 +1118,7 @@ def register_routes(app):
                 'headline': request.form.get('headline', ''),
                 'subheadline': request.form.get('subheadline', ''),
                 'cta_text': request.form.get('cta_text', ''),
-                'cta_url': request.form.get('cta_url', ''),
+                'create_account_url': request.form.get('create_account_url', ''),
                 'visible_sections': visible_sections,
                 'banned_countries': banned_countries
             }
@@ -1158,7 +1169,7 @@ def register_routes(app):
                 'headline': request.form.get('headline', ''),
                 'subheadline': request.form.get('subheadline', ''),
                 'cta_text': request.form.get('cta_text', ''),
-                'cta_url': request.form.get('cta_url', ''),
+                'create_account_url': request.form.get('create_account_url', ''),
                 'visible_sections': visible_sections,
                 'banned_countries': banned_countries
             }

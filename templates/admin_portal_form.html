@@ -190,11 +190,11 @@
                 <h2>Branding & Customization</h2>
 
                 <div class="form-group">
-                    <label for="cta_url">Call-to-Action URL</label>
-                    <input type="url" id="cta_url" name="cta_url"
-                           value="{{ theme.get('cta_url', '') }}"
+                    <label for="create_account_url">Create Account URL</label>
+                    <input type="url" id="create_account_url" name="create_account_url"
+                           value="{{ theme.get('create_account_url', '') or theme.get('cta_url', '') }}"
                            placeholder="https://example.com/signup">
-                    <div class="help-text">Where the CTA button should link to</div>
+                    <div class="help-text">Where the Create Account button should link to</div>
                 </div>
             </div>
 

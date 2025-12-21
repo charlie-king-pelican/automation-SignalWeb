@@ -39,7 +39,12 @@
         <!-- Section Header with Link Account Button -->
         <div class="accounts-header">
             <h1>{{ profile_name }}'s Accounts</h1>
-            <button class="link-account-btn" type="button" onclick="openLinkModal()">Link account</button>
+            <div class="accounts-header-buttons">
+                {% if create_account_url %}
+                <a href="{{ create_account_url }}" class="create-account-btn" target="_blank" rel="noopener">Create account</a>
+                {% endif %}
+                <button class="link-account-btn" type="button" onclick="openLinkModal()">Link account</button>
+            </div>
         </div>
         {% if not copiers %}
         <div class="no-data">No copier accounts found</div>
