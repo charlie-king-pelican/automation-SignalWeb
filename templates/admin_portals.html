@@ -100,25 +100,28 @@
         }
         .admin-actions {
             display: flex;
-            gap: 8px;
-            justify-content: flex-end;
+            gap: 6px;
             align-items: center;
-            flex-wrap: wrap;
+            flex-wrap: nowrap;
         }
         .admin-actions form {
-            margin: 0;
+            display: contents;
         }
         .action-btn {
-            padding: 5px 10px;
-            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            height: 28px;
+            padding: 0 10px;
+            border-radius: 4px;
             cursor: pointer;
             text-decoration: none;
-            display: inline-block;
             font-size: 12px;
             font-weight: 500;
-            line-height: 1.2;
+            line-height: 1;
             border: 1px solid transparent;
             white-space: nowrap;
+            box-sizing: border-box;
         }
         .btn-edit {
             background: #007bff;
@@ -130,12 +133,12 @@
             border-color: #0056b3;
         }
         .btn-toggle {
-            background: #f8f9fa;
-            color: #495057;
+            background: transparent;
+            color: #6c757d;
             border-color: #ced4da;
         }
         .btn-toggle:hover {
-            background: #e9ecef;
+            background: #f8f9fa;
             border-color: #adb5bd;
         }
         .btn-delete {
@@ -144,8 +147,8 @@
             border-color: #dc3545;
         }
         .btn-delete:hover {
-            background: #dc3545;
-            color: white;
+            background: #fff5f5;
+            border-color: #dc3545;
         }
         .portal-slug {
             font-family: monospace;
