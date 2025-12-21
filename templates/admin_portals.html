@@ -173,6 +173,9 @@
                     <th>Name</th>
                     <th>Slug / URL</th>
                     <th>Strategy ID</th>
+                    <th>Tenant</th>
+                    <th>Access Control</th>
+                    <th>Create URL</th>
                     <th>Status</th>
                     <th>Total Views</th>
                     <th>Successful Copies</th>
@@ -190,6 +193,27 @@
                             <a href="{{ url_for('portal_view', slug=portal.slug) }}" target="_blank" class="portal-link">View Portal →</a>
                         </td>
                         <td><code style="font-size: 12px;">{{ portal.strategy_id }}</code></td>
+                        {% set theme = (portal.theme_json|from_json) if portal.theme_json else {} %}
+                        <td>
+                            {% set tenant = (theme.get('tenant_id', '')|string).strip() %}
+                            {% if tenant %}{{ tenant }}{% else %}-{% endif %}
+                        </td>
+                        <td style="text-align: center;">
+                            {% set banned = theme.get('banned_countries', []) %}
+                            {% if banned and banned|length > 0 %}
+                                <span style="color: #155724;">✓</span>
+                            {% else %}
+                                <span style="color: #999;">✗</span>
+                            {% endif %}
+                        </td>
+                        <td style="text-align: center;">
+                            {% set create_url = (theme.get('create_account_url', '')|string).strip() or (theme.get('cta_url', '')|string).strip() %}
+                            {% if create_url %}
+                                <span style="color: #155724;">✓</span>
+                            {% else %}
+                                <span style="color: #999;">✗</span>
+                            {% endif %}
+                        </td>
                         <td>
                             <span class="status-badge {% if portal.is_active %}status-active{% else %}status-inactive{% endif %}">
                                 {% if portal.is_active %}Active{% else %}Inactive{% endif %}
@@ -215,7 +239,7 @@
                     {% endfor %}
                 {% else %}
                     <tr>
-                        <td colspan="8">
+                        <td colspan="11">
                             <div class="empty-state">
                                 <div class="empty-state-icon">📊</div>
                                 <h3 style="margin: 0 0 10px 0; color: #666;">No Portals Yet</h3>
