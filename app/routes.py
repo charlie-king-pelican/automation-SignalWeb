@@ -949,6 +949,13 @@ def register_routes(app):
         profile_info = services.get_profile_info(token)
         accounts_list = services.get_accounts_list(token)
 
+        # Check country blocking before proceeding
+        theme_for_blocking = json.loads(portal.theme_json) if portal.theme_json else {}
+        banned_countries = set(theme_for_blocking.get('banned_countries') or [])
+        user_country = (profile_info.get('CountryCode') or '').upper() if profile_info else ''
+        if user_country and user_country in banned_countries:
+            return render_template('geo_blocked.html'), 403
+
         # Fetch strategy data using authenticated user's token
         strategy_data = services.get_strategy_by_id(portal.profile_id, portal.strategy_id, token)
 
@@ -1092,12 +1099,17 @@ def register_routes(app):
                 'trades': request.form.get('visible_trades') == 'on'
             }
 
+            # Parse banned countries from comma-separated input
+            banned_countries_raw = request.form.get('banned_countries', '')
+            banned_countries = [c.strip().upper() for c in banned_countries_raw.split(',') if c.strip()]
+
             theme = {
                 'headline': request.form.get('headline', ''),
                 'subheadline': request.form.get('subheadline', ''),
                 'cta_text': request.form.get('cta_text', ''),
                 'cta_url': request.form.get('cta_url', ''),
-                'visible_sections': visible_sections
+                'visible_sections': visible_sections,
+                'banned_countries': banned_countries
             }
 
             portal = Portal(
@@ -1138,12 +1150,17 @@ def register_routes(app):
                 'trades': request.form.get('visible_trades') == 'on'
             }
 
+            # Parse banned countries from comma-separated input
+            banned_countries_raw = request.form.get('banned_countries', '')
+            banned_countries = [c.strip().upper() for c in banned_countries_raw.split(',') if c.strip()]
+
             theme = {
                 'headline': request.form.get('headline', ''),
                 'subheadline': request.form.get('subheadline', ''),
                 'cta_text': request.form.get('cta_text', ''),
                 'cta_url': request.form.get('cta_url', ''),
-                'visible_sections': visible_sections
+                'visible_sections': visible_sections,
+                'banned_countries': banned_countries
             }
 
             portal.name = request.form.get('name')

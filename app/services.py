@@ -122,7 +122,8 @@ def get_profile_info(token):
         return {
             'name': profile_data.get('Name', 'User'),
             'strategies_count': strategies_count,
-            'copiers_count': copiers_count
+            'copiers_count': copiers_count,
+            'CountryCode': profile_data.get('CountryCode', '')
         }
     except Exception:
         return None

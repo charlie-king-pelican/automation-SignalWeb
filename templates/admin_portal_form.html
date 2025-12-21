@@ -262,6 +262,18 @@
                 </div>
             </div>
 
+            <div class="form-section">
+                <h2>Access Control</h2>
+
+                <div class="form-group">
+                    <label for="banned_countries">Banned Countries</label>
+                    <input type="text" id="banned_countries" name="banned_countries"
+                           value="{% if portal %}{{ (portal.theme_json|from_json|attr('banned_countries') or [])|join(', ') }}{% endif %}"
+                           placeholder="e.g., GB, US, AU">
+                    <div class="help-text">Comma-separated ISO country codes. Users from these countries will be blocked from accessing this portal.</div>
+                </div>
+            </div>
+
             <div class="form-actions">
                 <button type="submit" class="btn-submit">
                     {% if portal %}Update Portal{% else %}Create Portal{% endif %}
